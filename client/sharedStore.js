@@ -50,6 +50,19 @@ export function emptyStore() {
   };
 }
 
+/** Firebase may return arrays as objects with numeric keys. */
+function asArray(val) {
+  if (!val) return [];
+  if (Array.isArray(val)) return val.filter((x) => x != null);
+  if (typeof val === 'object') {
+    return Object.keys(val)
+      .sort((a, b) => Number(a) - Number(b))
+      .map((k) => val[k])
+      .filter((x) => x != null);
+  }
+  return [];
+}
+
 export function normalizePost(p) {
   const placed =
     p.placed === 1 || p.placed === true || p.reminded === 1 || p.reminded === true
@@ -69,12 +82,33 @@ export function normalizePost(p) {
 function normalizeStore(raw) {
   if (!raw || typeof raw !== 'object') return emptyStore();
   return {
-    posts: (raw.posts || []).map(normalizePost),
-    templates: raw.templates || [],
-    history: raw.history || [],
-    seq: raw.seq || { posts: 1, templates: 1, history: 1 },
+    posts: asArray(raw.posts).map(normalizePost),
+    templates: asArray(raw.templates),
+    history: asArray(raw.history),
+    seq: {
+      posts: Number(raw.seq?.posts) || 1,
+      templates: Number(raw.seq?.templates) || 1,
+      history: Number(raw.seq?.history) || 1,
+    },
     updated_at: raw.updated_at || new Date().toISOString(),
   };
+}
+
+function hasUserData(s) {
+  return Boolean(s && (s.posts?.length || s.history?.length));
+}
+
+/**
+ * Prefer newer snapshot, but never let an empty cloud shell wipe local posts.
+ */
+function pickPreferred(remote, local) {
+  if (!local) return remote;
+  if (!remote) return local;
+  const remoteEmpty = !hasUserData(remote);
+  const localHas = hasUserData(local);
+  if (remoteEmpty && localHas) return local;
+  if ((remote.updated_at || '') >= (local.updated_at || '')) return remote;
+  return local;
 }
 
 function readLocal() {
@@ -91,10 +125,23 @@ function writeLocal(store) {
   localStorage.setItem(STORE_KEY, JSON.stringify(store));
 }
 
+function toRemotePayload(store) {
+  return {
+    posts: store.posts || [],
+    templates: store.templates || [],
+    history: store.history || [],
+    seq: store.seq,
+    updated_at: store.updated_at,
+    _v: 1,
+  };
+}
+
 let cache = null;
 let dbRef = null;
 let remoteReady = false;
-let writing = false;
+let bootPromise = null;
+let lastWrittenAt = '';
+let writeChain = Promise.resolve();
 const listeners = new Set();
 
 function emit() {
@@ -107,6 +154,51 @@ function emit() {
   }
 }
 
+function queueRemoteWrite(store) {
+  if (!isRemoteSyncEnabled() || !dbRef) return Promise.resolve();
+  const payload = toRemotePayload(store);
+  lastWrittenAt = payload.updated_at;
+  writeChain = writeChain
+    .then(() => set(dbRef, payload))
+    .catch((e) => console.warn('Firebase write failed', e));
+  return writeChain;
+}
+
+function applyRemote(val, { allowPushLocal = false } = {}) {
+  const local = cache || readLocal();
+
+  if (!val) {
+    remoteReady = true;
+    if (!cache) {
+      cache = local || emptyStore();
+      writeLocal(cache);
+    }
+    if (allowPushLocal && cache) queueRemoteWrite(cache);
+    return;
+  }
+
+  let next;
+  try {
+    next = normalizeStore(val);
+  } catch (e) {
+    console.warn('Bad remote store, keeping local', e);
+    remoteReady = true;
+    return;
+  }
+
+  const preferred = pickPreferred(next, local);
+  const usedLocal =
+    preferred === local && local && preferred !== next;
+
+  cache = preferred;
+  writeLocal(cache);
+  remoteReady = true;
+
+  if (usedLocal && allowPushLocal) {
+    queueRemoteWrite(cache);
+  }
+}
+
 function initRemote() {
   if (!isRemoteSyncEnabled() || dbRef) return;
   const app = initializeApp(firebaseConfig);
@@ -114,28 +206,14 @@ function initRemote() {
   dbRef = ref(db, REMOTE_PATH);
 
   onValue(dbRef, (snap) => {
-    if (writing) return;
     const val = snap.val();
-    if (!val) {
+    if (val?.updated_at && val.updated_at === lastWrittenAt) {
       remoteReady = true;
-      if (!cache) {
-        cache = readLocal() || emptyStore();
-        writeLocal(cache);
-        writing = true;
-        set(dbRef, cache)
-          .catch(console.warn)
-          .finally(() => {
-            writing = false;
-          });
-      }
       return;
     }
-    const next = normalizeStore(val);
     const prevAt = cache?.updated_at || '';
-    cache = next;
-    writeLocal(cache);
-    remoteReady = true;
-    if (next.updated_at !== prevAt) emit();
+    applyRemote(val, { allowPushLocal: true });
+    if (cache && cache.updated_at !== prevAt) emit();
   });
 }
 
@@ -155,26 +233,41 @@ if (typeof window !== 'undefined') {
 }
 
 export async function ensureStore() {
-  if (cache) return cache;
-  initRemote();
+  if (cache && remoteReady) return cache;
+  if (bootPromise) return bootPromise;
 
-  if (isRemoteSyncEnabled() && dbRef) {
-    try {
-      const snap = await get(dbRef);
-      if (snap.exists()) {
-        cache = normalizeStore(snap.val());
+  bootPromise = (async () => {
+    initRemote();
+    const local = readLocal();
+
+    if (isRemoteSyncEnabled() && dbRef) {
+      try {
+        const snap = await get(dbRef);
+        if (snap.exists()) {
+          applyRemote(snap.val(), { allowPushLocal: true });
+          return cache;
+        }
+        cache = local || emptyStore();
         writeLocal(cache);
         remoteReady = true;
+        await queueRemoteWrite(cache);
         return cache;
+      } catch (e) {
+        console.warn('Firebase read failed, using localStorage', e);
       }
-    } catch (e) {
-      console.warn('Firebase read failed, using localStorage', e);
     }
-  }
 
-  cache = readLocal() || emptyStore();
-  writeLocal(cache);
-  return cache;
+    cache = local || emptyStore();
+    writeLocal(cache);
+    remoteReady = true;
+    return cache;
+  })();
+
+  try {
+    return await bootPromise;
+  } finally {
+    bootPromise = null;
+  }
 }
 
 export function getStoreSync() {
@@ -193,13 +286,10 @@ export async function saveStore(mutator) {
   writeLocal(cache);
 
   if (isRemoteSyncEnabled() && dbRef) {
-    writing = true;
     try {
-      await set(dbRef, cache);
+      await queueRemoteWrite(cache);
     } catch (e) {
       console.warn('Firebase write failed', e);
-    } finally {
-      writing = false;
     }
   }
 
