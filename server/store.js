@@ -46,7 +46,6 @@ function emptyStore() {
   return {
     posts: [],
     templates: SEED_TEMPLATES.map((t, i) => ({ id: i + 1, ...t })),
-    recipients: [],
     history: [],
     seq: { posts: 1, templates: SEED_TEMPLATES.length + 1, history: 1 },
   };
@@ -62,8 +61,6 @@ function normalizePost(p) {
     text: String(p.text ?? ''),
     publish_at: String(p.publish_at),
     placed,
-    notified:
-      p.notified === 1 || p.notified === true || placed === 1 ? 1 : 0,
     kind: p.kind || 'post',
     network: p.network || 'vk',
     category: p.category || 'Другое',
@@ -95,7 +92,6 @@ export function createStore(rootDir) {
     cache = {
       posts: (raw.posts || []).map(normalizePost),
       templates: raw.templates || [],
-      recipients: raw.recipients || [],
       history: raw.history || [],
       seq: raw.seq || { posts: 1, templates: 1, history: 1 },
     };
@@ -142,7 +138,6 @@ export function createStore(rootDir) {
             network,
             category: category || prev.category || 'Другое',
             placed: nextPlaced,
-            notified: nextPlaced === 1 ? 1 : prev.notified || 0,
           };
           const row = s.posts[idx];
           if (prev.placed !== 1 && nextPlaced === 1) {
@@ -183,7 +178,6 @@ export function createStore(rootDir) {
           network,
           category: category || 'Другое',
           placed: 0,
-          notified: 0,
         };
         s.posts.push(row);
         return row;
@@ -195,16 +189,6 @@ export function createStore(rootDir) {
         s.posts = s.posts.filter((p) => p.id !== Number(id));
         return s.posts.length < before;
       });
-    },
-    addRecipient(userId) {
-      update((s) => {
-        if (!s.recipients.some((r) => r.user_id === userId)) {
-          s.recipients.push({ user_id: userId });
-        }
-      });
-    },
-    getRecipients() {
-      return load().recipients;
     },
     getTemplates() {
       return [...load().templates].sort((a, b) =>
@@ -235,50 +219,6 @@ export function createStore(rootDir) {
       return [...load().history].sort((a, b) =>
         (b.placed_at || '').localeCompare(a.placed_at || '')
       );
-    },
-    /** Пометить due-посты как размещённые и записать в историю */
-    markPlaced(postIds) {
-      const now = new Date().toISOString();
-      return update((s) => {
-        const placed = [];
-        for (const id of postIds) {
-          const post = s.posts.find((p) => p.id === id);
-          if (!post || post.placed === 1) continue;
-          post.placed = 1;
-          post.notified = 1;
-          const entry = {
-            id: s.seq.history++,
-            post_id: post.id,
-            text: post.text,
-            publish_at: post.publish_at,
-            placed_at: now,
-            kind: post.kind,
-            network: post.network,
-            category: post.category || 'Другое',
-          };
-          s.history.push(entry);
-          placed.push(entry);
-        }
-        return placed;
-      });
-    },
-    /** Напоминание отправлено — не путать с «размещена» */
-    markNotified(postIds) {
-      return update((s) => {
-        for (const id of postIds) {
-          const post = s.posts.find((p) => p.id === id);
-          if (post) post.notified = 1;
-        }
-      });
-    },
-    getDueForNotify(nowIso) {
-      return load().posts.filter(
-        (p) =>
-          p.publish_at <= nowIso && p.placed === 0 && p.notified !== 1
-      );
-    },
-    getDueUnplaced(nowIso) {
-      return this.getDueForNotify(nowIso);
     },
   };
 }

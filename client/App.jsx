@@ -1376,32 +1376,13 @@ export default function App() {
   }, [loadTemplates]);
 
   useEffect(() => {
-    let cancelled = false;
     (async () => {
       try {
         await bridge.send('VKWebAppInit');
       } catch {
-        return;
-      }
-      try {
-        const user = await bridge.send('VKWebAppGetUserInfo');
-        if (cancelled || !user?.id) return;
-        await api('/api/me', {
-          method: 'POST',
-          body: JSON.stringify({ user_id: user.id }),
-        });
-      } catch (e) {
-        console.warn('GetUserInfo /api/me:', e);
-      }
-      try {
-        await bridge.send('VKWebAppAllowNotifications');
-      } catch {
-        /* ok */
+        /* browser / outside VK */
       }
     })();
-    return () => {
-      cancelled = true;
-    };
   }, []);
 
   const postsByDay = useMemo(() => {
@@ -1738,8 +1719,7 @@ export default function App() {
           <Group>
             {history.length === 0 ? (
               <Placeholder header="Пока пусто">
-                Отметьте «Размещена» в редактировании или дождитесь
-                напоминания — запись появится здесь
+                Отметьте «Размещена» в редактировании — запись появится здесь
               </Placeholder>
             ) : (
               history.map((h) => {
