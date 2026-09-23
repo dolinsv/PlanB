@@ -1,9 +1,7 @@
 /**
- * Firebase Realtime Database config (client keys are public by design).
- * Create a free project: https://console.firebase.google.com/
- * Enable Realtime Database → start in test mode (or rules below).
+ * Firebase client config (public by design — protect data with DB rules).
  *
- * Rules (for a private couple planner):
+ * Realtime Database rules:
  * {
  *   "rules": {
  *     "planb": {
@@ -12,17 +10,16 @@
  *     }
  *   }
  * }
- *
- * Fill in values, then run: npm run deploy
  */
 export const firebaseConfig = {
-  apiKey: '',
-  authDomain: '',
-  databaseURL: '',
-  projectId: '',
-  storageBucket: '',
-  messagingSenderId: '',
-  appId: '',
+  apiKey: 'AIzaSyAsTEtT8AOEWnHd6SdSuWRB0AEGqDITPPk',
+  authDomain: 'planb-53dd9.firebaseapp.com',
+  databaseURL: 'https://planb-53dd9-default-rtdb.firebaseio.com',
+  projectId: 'planb-53dd9',
+  storageBucket: 'planb-53dd9.firebasestorage.app',
+  messagingSenderId: '814482712904',
+  appId: '1:814482712904:web:178b8839d5fd57a5eaeb7d',
+  measurementId: 'G-X32S4TH3KC',
 };
 
 export function isRemoteSyncEnabled() {
