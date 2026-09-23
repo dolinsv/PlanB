@@ -24,6 +24,7 @@ import {
   Switch,
 } from '@vkontakte/vkui';
 import './styles.css';
+import { api } from './api.js';
 
 const WEEKDAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 const MONTHS = [
@@ -396,18 +397,6 @@ async function copyToClipboard(payload) {
   ta.select();
   document.execCommand('copy');
   document.body.removeChild(ta);
-}
-
-async function api(path, options) {
-  const res = await fetch(path, {
-    headers: { 'Content-Type': 'application/json' },
-    ...options,
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.error || res.statusText);
-  }
-  return res.json();
 }
 
 function MonthGrid({

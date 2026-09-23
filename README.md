@@ -1,53 +1,25 @@
 # PlanB — контент-план
 
 Личный планировщик публикаций (пост / клип / сторис) для VK и Instagram.
-Данные — общий JSON на сервере, чтобы пользоваться с разных устройств.
 
-## Стек
+**Онлайн:** https://dolinsv.github.io/PlanB/
 
-- Frontend: React 18 + Vite + VKUI + VK Bridge
-- Backend: Node.js (ESM) + Express
-- Хранение: `data/store.json`
+На GitHub Pages данные хранятся в браузере (`localStorage`), как у [mama-plan](https://dolinsv.github.io/mama-plan/).
 
-## Локальный запуск
+## Локально
 
 ```bash
 npm install
+npm run dev:server
+npm run dev:client
 ```
 
-Два терминала:
+http://localhost:5173
+
+## Публикация на GitHub Pages
 
 ```bash
-npm run dev:server   # API на :3000
-npm run dev:client   # UI на :5173, proxy /api → :3000
+npm run deploy
 ```
 
-Откройте http://localhost:5173
-
-Прод-сборка:
-
-```bash
-npm start
-```
-
-## Возможности
-
-- Календарь месяца, несколько публикаций в день
-- Типы: пост / клип / сторис; сети: VK / Instagram
-- Тематики и текстовые заготовки
-- Перенос на другой день (кнопка или drag-and-drop)
-- Флаг «Размещена» вручную → запись в историю
-- Копирование текста для вставки в соцсеть
-
-## Цвета в календаре
-
-- Синий — пост
-- Красный — клип
-- Зелёный — сторис
-- Зачёркнуто — размещена
-
-## iPhone: на домашний экран
-
-1. Откройте HTTPS-URL в Safari
-2. «Поделиться» → «На экран „Домой“»
-3. Название: **PlanB**
+В настройках репозитория: **Settings → Pages → Deploy from branch `gh-pages` / root**.
