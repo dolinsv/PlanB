@@ -23,5 +23,5 @@ if (existsSync(index)) {
   copyFileSync(index, join(dist, '404.html'));
 }
 
-run('npx', ['gh-pages', '-d', 'dist', '-m', 'deploy: github pages']);
+run('npx', ['gh-pages', '-d', 'dist', '--nojekyll']);
 console.log('Published: https://dolinsv.github.io/PlanB/');
