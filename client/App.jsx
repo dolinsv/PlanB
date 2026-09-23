@@ -25,6 +25,7 @@ import {
 } from '@vkontakte/vkui';
 import './styles.css';
 import { api } from './api.js';
+import { subscribeStore } from './sharedStore.js';
 
 const WEEKDAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 const MONTHS = [
@@ -1363,6 +1364,33 @@ export default function App() {
   useEffect(() => {
     loadTemplates();
   }, [loadTemplates]);
+
+  useEffect(() => {
+    loadHistory();
+  }, [loadHistory]);
+
+  // Live updates: Firebase (all devices) or storage event (other tabs)
+  useEffect(() => {
+    const STATIC = import.meta.env.VITE_STATIC === 'true';
+    if (STATIC) {
+      return subscribeStore(() => {
+        loadPosts();
+        loadTemplates();
+        loadHistory();
+      });
+    }
+    // Local Express API: poll so another open client sees changes
+    const id = setInterval(() => {
+      loadPosts();
+      if (activePanel === 'history' || activePanel === 'history-detail') {
+        loadHistory();
+      }
+      if (activePanel === 'templates' || activePanel === 'template-edit') {
+        loadTemplates();
+      }
+    }, 4000);
+    return () => clearInterval(id);
+  }, [loadPosts, loadTemplates, loadHistory, activePanel]);
 
   useEffect(() => {
     (async () => {
