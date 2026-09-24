@@ -1231,6 +1231,7 @@ function TemplatesList({
   onSelect,
   selectMode,
   onEdit,
+  onAdd,
   onQuickDelete,
   posts,
   history,
@@ -1248,13 +1249,28 @@ function TemplatesList({
 
   return (
     <div className="cp-form-block">
-      <Div style={{ paddingBottom: 0 }}>
-        <div className="cp-tpl-chips cp-tpl-chips--scroll">
+      {!selectMode && (
+        <Div>
+          <Button
+            size="l"
+            stretched
+            mode="secondary"
+            onClick={() => onAdd?.()}
+            before={<span className="cp-add-plus" aria-hidden="true">+</span>}
+          >
+            Добавить заготовку
+          </Button>
+        </Div>
+      )}
+      <Div style={{ paddingTop: selectMode ? undefined : 0, paddingBottom: 0 }}>
+        <div className="cp-tpl-filter" role="tablist" aria-label="Тематика">
           {cats.map((c) => (
             <button
               key={c}
               type="button"
-              className={`cp-tpl-chip${category === c ? ' cp-tpl-chip--active' : ''}`}
+              role="tab"
+              aria-selected={category === c}
+              className={`cp-tpl-filter__item${category === c ? ' cp-tpl-filter__item--active' : ''}`}
               onClick={() => onCategory(c)}
             >
               {c}
@@ -1264,8 +1280,19 @@ function TemplatesList({
       </Div>
       <Group>
         {filtered.length === 0 ? (
-          <Placeholder header="Нет заготовок">
-            Добавьте тексты по тематикам — они появятся здесь
+          <Placeholder
+            header="Нет заготовок"
+            action={
+              !selectMode ? (
+                <Button size="m" mode="primary" onClick={() => onAdd?.()}>
+                  Создать первую
+                </Button>
+              ) : null
+            }
+          >
+            {selectMode
+              ? 'В этой тематике пока пусто'
+              : 'Создайте тексты по тематикам — они появятся здесь'}
           </Placeholder>
         ) : (
           filtered.map((t) => {
@@ -1974,13 +2001,6 @@ export default function App() {
                 <PanelHeaderBack onClick={backFromTemplates} />
               ) : null
             }
-            after={
-              !tplSelectMode ? (
-                <PanelHeaderButton onClick={() => openTplEdit(null)}>
-                  +
-                </PanelHeaderButton>
-              ) : null
-            }
           >
             {tplSelectMode ? 'Выбор заготовки' : 'Заготовки'}
           </PanelHeader>
@@ -1991,6 +2011,7 @@ export default function App() {
             selectMode={tplSelectMode}
             onSelect={pickTemplate}
             onEdit={openTplEdit}
+            onAdd={() => openTplEdit(null)}
             onQuickDelete={quickDeleteTemplate}
             posts={planPosts}
             history={history}
