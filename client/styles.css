@@ -718,14 +718,25 @@ body {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 6px;
+  gap: 4px;
   height: 36px;
 }
 
 .cp-day-row__tools .cp-net {
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   border-radius: 6px;
+}
+
+.cp-day-row__tools .cp-icon-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+}
+
+.cp-day-row__tools .cp-icon-btn svg {
+  width: 16px;
+  height: 16px;
 }
 
 .cp-type-banner {
@@ -1276,13 +1287,18 @@ body {
   }
 
   .cp-day-row__tools {
-    height: 40px;
+    height: 36px;
   }
 
   .cp-day-row__tools .cp-net {
-    width: 40px;
-    height: 40px;
-    border-radius: 7px;
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+  }
+
+  .cp-day-row__tools .cp-icon-btn {
+    width: 32px;
+    height: 32px;
   }
 
   .cp-day-row {

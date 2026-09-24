@@ -592,7 +592,7 @@ function MonthGrid({
   );
 }
 
-function DayPanelBody({ year, month, day, posts, onAdd, onEdit, onMove }) {
+function DayPanelBody({ year, month, day, posts, onAdd, onEdit, onMove, onDelete }) {
   return (
     <>
       <Group>
@@ -683,6 +683,18 @@ function DayPanelBody({ year, month, day, posts, onAdd, onEdit, onMove }) {
                         }}
                       >
                         <IconMove />
+                      </button>
+                      <button
+                        type="button"
+                        className="cp-icon-btn cp-icon-btn--danger"
+                        title="Удалить"
+                        aria-label="Удалить публикацию"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDelete?.(p);
+                        }}
+                      >
+                        <IconTrash />
                       </button>
                     </div>
                   </div>
@@ -1750,6 +1762,16 @@ export default function App() {
     setSnack('Удалено');
   };
 
+  const deletePostFromDay = async (p) => {
+    try {
+      await api(`/api/posts/${p.id}`, { method: 'DELETE' });
+      afterDelete();
+    } catch (e) {
+      console.error(e);
+      setSnack('Не удалось удалить');
+    }
+  };
+
   const quickDeleteTemplate = async (t) => {
     try {
       await api(`/api/templates/${t.id}`, { method: 'DELETE' });
@@ -1899,6 +1921,7 @@ export default function App() {
             onAdd={openAdd}
             onEdit={openEdit}
             onMove={openMove}
+            onDelete={deletePostFromDay}
           />
           {snack && activePanel === 'day' && (
             <Snackbar onClose={() => setSnack(null)}>{snack}</Snackbar>
