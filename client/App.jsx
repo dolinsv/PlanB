@@ -15,7 +15,6 @@ import {
   Input,
   Snackbar,
   CellButton,
-  SegmentedControl,
   Placeholder,
   Epic,
   Tabbar,
@@ -963,15 +962,30 @@ function PostFormBody({ draft, onBack, onSaved, onDeleted, onPickTemplate, onSna
         {!isEdit && (
           <>
             <FormItem top="Тип публикации">
-              <SegmentedControl
-                size="l"
-                value={kind}
-                onChange={(v) => setKind(String(v))}
-                options={KINDS.map((k) => ({
-                  label: k.label,
-                  value: k.value,
-                }))}
-              />
+              <div className="cp-kind-pick" role="tablist" aria-label="Тип публикации">
+                {KINDS.map((k) => (
+                  <button
+                    key={k.value}
+                    type="button"
+                    role="tab"
+                    aria-selected={kind === k.value}
+                    className={`cp-kind-pick__item${kind === k.value ? ' cp-kind-pick__item--active' : ''}`}
+                    style={
+                      kind === k.value
+                        ? { '--cp-kind-color': k.color }
+                        : undefined
+                    }
+                    onClick={() => setKind(k.value)}
+                  >
+                    <span
+                      className="cp-kind-pick__dot"
+                      style={{ background: k.color }}
+                      aria-hidden="true"
+                    />
+                    {k.label}
+                  </button>
+                ))}
+              </div>
             </FormItem>
 
             <FormItem top="Соцсеть">
@@ -1409,12 +1423,12 @@ function TemplateFormBody({ draft, onBack, onSaved, onDeleted }) {
     <div className="cp-form-block">
       <Group>
         <FormItem top="Тематика">
-          <div className="cp-tpl-chips cp-tpl-chips--scroll">
+          <div className="cp-tpl-filter" role="listbox" aria-label="Тематика">
             {TEMPLATE_CATEGORIES.map((c) => (
               <button
                 key={c}
                 type="button"
-                className={`cp-tpl-chip${category === c ? ' cp-tpl-chip--active' : ''}`}
+                className={`cp-tpl-filter__item${category === c ? ' cp-tpl-filter__item--active' : ''}`}
                 onClick={() => setCategory(c)}
               >
                 {c}
