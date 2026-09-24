@@ -114,6 +114,52 @@ app.delete('/api/history/:id', (req, res) => {
   res.json({ ok: true });
 });
 
+app.get('/api/categories', (_req, res) => {
+  res.json(store.getCategories());
+});
+
+app.post('/api/categories', (req, res) => {
+  const { name } = req.body || {};
+  const result = store.addCategory(name);
+  if (result?.error) {
+    const status =
+      result.error === 'already exists' ? 409 : 400;
+    return res.status(status).json({ error: result.error });
+  }
+  res.status(201).json(result.categories);
+});
+
+app.put('/api/categories', (req, res) => {
+  const { from, to } = req.body || {};
+  const result = store.renameCategory(from, to);
+  if (result?.error) {
+    const status =
+      result.error === 'not found'
+        ? 404
+        : result.error === 'already exists'
+          ? 409
+          : 400;
+    return res.status(status).json({ error: result.error });
+  }
+  res.json(result.categories);
+});
+
+app.delete('/api/categories', (req, res) => {
+  const name = req.query.name || req.body?.name;
+  const result = store.deleteCategory(name);
+  if (result?.error) {
+    const status =
+      result.error === 'not found'
+        ? 404
+        : result.error === 'cannot delete default' ||
+            result.error === 'last category'
+          ? 400
+          : 400;
+    return res.status(status).json({ error: result.error });
+  }
+  res.json(result.categories);
+});
+
 const dist = join(root, 'dist');
 if (existsSync(dist)) {
   app.use(express.static(dist));

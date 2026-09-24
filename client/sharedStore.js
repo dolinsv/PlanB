@@ -40,11 +40,24 @@ const SEED_TEMPLATES = [
   },
 ];
 
+export const DEFAULT_CATEGORIES = [
+  'Дети',
+  'Семья',
+  'Отношения',
+  'Бизнес',
+  'Реклама',
+  'Юмор',
+  'Мотивация',
+  'Система',
+  'Другое',
+];
+
 export function emptyStore() {
   return {
     posts: [],
     templates: SEED_TEMPLATES.map((t, i) => ({ id: i + 1, ...t })),
     history: [],
+    categories: [...DEFAULT_CATEGORIES],
     seq: { posts: 1, templates: SEED_TEMPLATES.length + 1, history: 1 },
     updated_at: new Date().toISOString(),
   };
@@ -81,10 +94,14 @@ export function normalizePost(p) {
 
 function normalizeStore(raw) {
   if (!raw || typeof raw !== 'object') return emptyStore();
+  const categories = asArray(raw.categories)
+    .map((c) => String(c || '').trim())
+    .filter(Boolean);
   return {
     posts: asArray(raw.posts).map(normalizePost),
     templates: asArray(raw.templates),
     history: asArray(raw.history),
+    categories: categories.length ? categories : [...DEFAULT_CATEGORIES],
     seq: {
       posts: Number(raw.seq?.posts) || 1,
       templates: Number(raw.seq?.templates) || 1,
@@ -156,25 +173,28 @@ function mergeStores(remote, local) {
     });
   }
 
-  if (
-    isSeedOnlyTemplates(newer.templates) &&
-    hasCustomTemplates(older)
-  ) {
-    return normalizeStore({
-      ...newer,
-      templates: older.templates,
-      seq: {
-        posts: Number(newer.seq?.posts) || 1,
-        history: Number(newer.seq?.history) || 1,
-        templates: Math.max(
-          Number(newer.seq?.templates) || 1,
-          Number(older.seq?.templates) || 1,
-          maxSeq(older.templates)
-        ),
-      },
-      updated_at: new Date().toISOString(),
-    });
-  }
+    if (
+      isSeedOnlyTemplates(newer.templates) &&
+      hasCustomTemplates(older)
+    ) {
+      return normalizeStore({
+        ...newer,
+        templates: older.templates,
+        categories: newer.categories?.length
+          ? newer.categories
+          : older.categories,
+        seq: {
+          posts: Number(newer.seq?.posts) || 1,
+          history: Number(newer.seq?.history) || 1,
+          templates: Math.max(
+            Number(newer.seq?.templates) || 1,
+            Number(older.seq?.templates) || 1,
+            maxSeq(older.templates)
+          ),
+        },
+        updated_at: new Date().toISOString(),
+      });
+    }
 
   // Newer wins as-is — do not union-merge posts (that resurrected deletes)
   return newer;
@@ -199,6 +219,7 @@ function toRemotePayload(store) {
     posts: store.posts || [],
     templates: store.templates || [],
     history: store.history || [],
+    categories: store.categories || [...DEFAULT_CATEGORIES],
     seq: store.seq,
     updated_at: store.updated_at,
     _v: 1,

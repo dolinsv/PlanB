@@ -517,6 +517,90 @@ body {
   padding-bottom: 4px !important;
 }
 
+.cp-cat-manage-link {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 10px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--vkui--color_text_accent);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 550;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.cp-cat-manage-link:active {
+  opacity: 0.7;
+}
+
+.cp-cat-add {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.cp-cat-add .vkuiInput,
+.cp-cat-add > *:first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.cp-cat-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--vkui--color_separator_primary_alpha);
+}
+
+.cp-cat-row:last-child {
+  border-bottom: 0;
+}
+
+.cp-cat-row__name {
+  font-size: 15px;
+  font-weight: 550;
+  color: var(--vkui--color_text_primary);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cp-cat-row__actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.cp-cat-row__edit {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.cp-cat-row__edit .vkuiInput,
+.cp-cat-row__edit > *:first-child {
+  flex: 1 1 140px;
+  min-width: 0;
+}
+
+.cp-cat-hint {
+  color: var(--vkui--color_text_secondary);
+}
+
+.cp-icon-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
 .cp-tpl-filter {
   display: flex;
   flex-wrap: wrap;

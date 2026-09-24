@@ -3,6 +3,7 @@ import {
   getStoreSync,
   saveStore,
   normalizePost,
+  DEFAULT_CATEGORIES,
 } from './sharedStore.js';
 
 function fail(message, status = 400) {
@@ -182,6 +183,78 @@ export async function localApi(path, options = {}) {
       s.history = s.history.filter((h) => h.id !== id);
       if (s.history.length === before) fail('history not found', 404);
       return { ok: true };
+    });
+  }
+
+  if (method === 'GET' && pathname === '/api/categories') {
+    const s = getStoreSync();
+    const cats = s.categories?.length
+      ? [...s.categories]
+      : [...DEFAULT_CATEGORIES];
+    return cats;
+  }
+
+  if (method === 'POST' && pathname === '/api/categories') {
+    const name = typeof body?.name === 'string' ? body.name.trim() : '';
+    if (!name) fail('name required');
+    return saveStore((s) => {
+      if (!Array.isArray(s.categories) || !s.categories.length) {
+        s.categories = [...DEFAULT_CATEGORIES];
+      }
+      if (s.categories.includes(name)) fail('already exists', 409);
+      s.categories.push(name);
+      return [...s.categories];
+    });
+  }
+
+  if (method === 'PUT' && pathname === '/api/categories') {
+    const from = typeof body?.from === 'string' ? body.from.trim() : '';
+    const to = typeof body?.to === 'string' ? body.to.trim() : '';
+    if (!from || !to) fail('from and to required');
+    return saveStore((s) => {
+      if (!Array.isArray(s.categories) || !s.categories.length) {
+        s.categories = [...DEFAULT_CATEGORIES];
+      }
+      const idx = s.categories.indexOf(from);
+      if (idx === -1) fail('not found', 404);
+      if (to !== from && s.categories.includes(to)) fail('already exists', 409);
+      s.categories[idx] = to;
+      for (const t of s.templates) {
+        if (t.category === from) t.category = to;
+      }
+      for (const p of s.posts) {
+        if (p.category === from) p.category = to;
+      }
+      for (const h of s.history) {
+        if (h.category === from) h.category = to;
+      }
+      return [...s.categories];
+    });
+  }
+
+  if (method === 'DELETE' && pathname === '/api/categories') {
+    const name = String(url.searchParams.get('name') || '').trim();
+    if (!name) fail('name required');
+    if (name === 'Другое') fail('cannot delete default');
+    return saveStore((s) => {
+      if (!Array.isArray(s.categories) || !s.categories.length) {
+        s.categories = [...DEFAULT_CATEGORIES];
+      }
+      if (s.categories.length <= 1) fail('last category');
+      const idx = s.categories.indexOf(name);
+      if (idx === -1) fail('not found', 404);
+      s.categories.splice(idx, 1);
+      if (!s.categories.includes('Другое')) s.categories.push('Другое');
+      for (const t of s.templates) {
+        if (t.category === name) t.category = 'Другое';
+      }
+      for (const p of s.posts) {
+        if (p.category === name) p.category = 'Другое';
+      }
+      for (const h of s.history) {
+        if (h.category === name) h.category = 'Другое';
+      }
+      return [...s.categories];
     });
   }
 

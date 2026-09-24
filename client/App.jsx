@@ -24,7 +24,7 @@ import {
 } from '@vkontakte/vkui';
 import './styles.css';
 import { api } from './api.js';
-import { subscribeStore } from './sharedStore.js';
+import { DEFAULT_CATEGORIES, subscribeStore } from './sharedStore.js';
 
 const WEEKDAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 const MONTHS = [
@@ -78,18 +78,6 @@ const KINDS = [
 const NETWORKS = [
   { value: 'vk', label: 'ВКонтакте', short: 'VK' },
   { value: 'instagram', label: 'Instagram', short: 'IG' },
-];
-
-const TEMPLATE_CATEGORIES = [
-  'Дети',
-  'Семья',
-  'Отношения',
-  'Бизнес',
-  'Реклама',
-  'Юмор',
-  'Мотивация',
-  'Система',
-  'Другое',
 ];
 
 const PLAN_POSTS_FROM = '2020-01-01T00:00:00.000Z';
@@ -352,6 +340,20 @@ function IconTrash() {
     <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path
         d="M5 7h14M10 7V5.5A1.5 1.5 0 0 1 11.5 4h1A1.5 1.5 0 0 1 14 5.5V7M8.5 7l.7 11.2a1.5 1.5 0 0 0 1.5 1.4h2.6a1.5 1.5 0 0 0 1.5-1.4L15.5 7"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function IconEdit() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17v3ZM14 7l3 3"
         stroke="currentColor"
         strokeWidth="1.7"
         strokeLinecap="round"
@@ -820,7 +822,17 @@ function MoveFormBody({ post, onBack, onMoved }) {
   );
 }
 
-function PostFormBody({ draft, onBack, onSaved, onDeleted, onPickTemplate, onSnack }) {
+function PostFormBody({
+  draft,
+  onBack,
+  onSaved,
+  onDeleted,
+  onPickTemplate,
+  onSnack,
+  categories,
+}) {
+  const themeList =
+    categories?.length > 0 ? categories : DEFAULT_CATEGORIES;
   const isEdit = Boolean(draft?.post?.id);
   const [text, setText] = useState(draft?.post?.text ?? draft?.presetText ?? '');
   const [kind, setKind] = useState(draft?.post?.kind || draft?.kind || 'post');
@@ -1028,7 +1040,7 @@ function PostFormBody({ draft, onBack, onSaved, onDeleted, onPickTemplate, onSna
 
         <FormItem top="Тематика">
           <div className="cp-tpl-filter" role="listbox" aria-label="Тематика">
-            {TEMPLATE_CATEGORIES.map((c) => (
+            {themeList.map((c) => (
               <button
                 key={c}
                 type="button"
@@ -1266,14 +1278,20 @@ function TemplatesList({
   onEdit,
   onAdd,
   onQuickDelete,
+  onManageCategories,
+  categories,
   posts,
   history,
 }) {
   const cats = useMemo(() => {
-    const set = new Set(TEMPLATE_CATEGORIES);
-    for (const t of templates) set.add(t.category);
-    return ['Все', ...[...set]];
-  }, [templates]);
+    const base = categories?.length > 0 ? categories : DEFAULT_CATEGORIES;
+    const extras = [];
+    for (const t of templates) {
+      const c = t.category || 'Другое';
+      if (!base.includes(c) && !extras.includes(c)) extras.push(c);
+    }
+    return ['Все', ...base, ...extras];
+  }, [templates, categories]);
 
   const filtered = useMemo(() => {
     if (!category || category === 'Все') return templates;
@@ -1318,6 +1336,15 @@ function TemplatesList({
             </button>
           ))}
         </div>
+        {!selectMode && (
+          <button
+            type="button"
+            className="cp-cat-manage-link"
+            onClick={() => onManageCategories?.()}
+          >
+            Управление тематиками
+          </button>
+        )}
       </Div>
       <Group>
         {filtered.length === 0 ? (
@@ -1393,7 +1420,9 @@ function TemplatesList({
   );
 }
 
-function TemplateFormBody({ draft, onBack, onSaved, onDeleted }) {
+function TemplateFormBody({ draft, onBack, onSaved, onDeleted, categories }) {
+  const themeList =
+    categories?.length > 0 ? categories : DEFAULT_CATEGORIES;
   const isEdit = Boolean(draft?.id);
   const [category, setCategory] = useState(draft?.category || 'Другое');
   const [text, setText] = useState(draft?.text || '');
@@ -1436,7 +1465,7 @@ function TemplateFormBody({ draft, onBack, onSaved, onDeleted }) {
       <Group>
         <FormItem top="Тематика">
           <div className="cp-tpl-filter" role="listbox" aria-label="Тематика">
-            {TEMPLATE_CATEGORIES.map((c) => (
+            {themeList.map((c) => (
               <button
                 key={c}
                 type="button"
@@ -1486,6 +1515,187 @@ function TemplateFormBody({ draft, onBack, onSaved, onDeleted }) {
   );
 }
 
+function CategoriesManageBody({ categories, onChanged, onSnack }) {
+  const [name, setName] = useState('');
+  const [editing, setEditing] = useState(null);
+  const [editValue, setEditValue] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const add = async () => {
+    const n = name.trim();
+    if (!n || busy) return;
+    setBusy(true);
+    try {
+      await api('/api/categories', {
+        method: 'POST',
+        body: JSON.stringify({ name: n }),
+      });
+      setName('');
+      onSnack?.('Тематика добавлена');
+      onChanged?.();
+    } catch (e) {
+      console.error(e);
+      onSnack?.(e?.message === 'already exists' ? 'Уже есть такая тематика' : 'Не удалось добавить');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const startEdit = (cat) => {
+    setEditing(cat);
+    setEditValue(cat);
+  };
+
+  const cancelEdit = () => {
+    setEditing(null);
+    setEditValue('');
+  };
+
+  const saveEdit = async () => {
+    const to = editValue.trim();
+    if (!editing || !to || busy) return;
+    if (to === editing) {
+      cancelEdit();
+      return;
+    }
+    setBusy(true);
+    try {
+      await api('/api/categories', {
+        method: 'PUT',
+        body: JSON.stringify({ from: editing, to }),
+      });
+      cancelEdit();
+      onSnack?.('Тематика изменена');
+      onChanged?.();
+    } catch (e) {
+      console.error(e);
+      onSnack?.(
+        e?.message === 'already exists'
+          ? 'Уже есть такая тематика'
+          : 'Не удалось изменить'
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const remove = async (cat) => {
+    if (busy || cat === 'Другое') return;
+    setBusy(true);
+    try {
+      await api(`/api/categories?name=${encodeURIComponent(cat)}`, {
+        method: 'DELETE',
+      });
+      if (editing === cat) cancelEdit();
+      onSnack?.('Тематика удалена');
+      onChanged?.();
+    } catch (e) {
+      console.error(e);
+      onSnack?.('Не удалось удалить');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="cp-form-block">
+      <Group>
+        <FormItem top="Новая тематика">
+          <div className="cp-cat-add">
+            <Input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Название"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  add();
+                }
+              }}
+            />
+            <Button
+              size="m"
+              mode="primary"
+              disabled={busy || !name.trim()}
+              onClick={add}
+            >
+              Добавить
+            </Button>
+          </div>
+        </FormItem>
+      </Group>
+      <Group header={<Header mode="secondary">Тематики</Header>}>
+        {(categories?.length ? categories : DEFAULT_CATEGORIES).map((c) => (
+          <div key={c} className="cp-cat-row">
+            {editing === c ? (
+              <div className="cp-cat-row__edit">
+                <Input
+                  value={editValue}
+                  onChange={(e) => setEditValue(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      saveEdit();
+                    } else if (e.key === 'Escape') {
+                      cancelEdit();
+                    }
+                  }}
+                />
+                <Button
+                  size="s"
+                  mode="primary"
+                  disabled={busy || !editValue.trim()}
+                  onClick={saveEdit}
+                >
+                  Сохранить
+                </Button>
+                <Button size="s" mode="secondary" disabled={busy} onClick={cancelEdit}>
+                  Отмена
+                </Button>
+              </div>
+            ) : (
+              <>
+                <span className="cp-cat-row__name">{c}</span>
+                <div className="cp-cat-row__actions">
+                  <button
+                    type="button"
+                    className="cp-icon-btn"
+                    aria-label="Изменить"
+                    title="Изменить"
+                    disabled={busy}
+                    onClick={() => startEdit(c)}
+                  >
+                    <IconEdit />
+                  </button>
+                  <button
+                    type="button"
+                    className="cp-icon-btn cp-icon-btn--danger"
+                    aria-label="Удалить"
+                    title={
+                      c === 'Другое'
+                        ? '«Другое» нельзя удалить'
+                        : 'Удалить тематику'
+                    }
+                    disabled={busy || c === 'Другое'}
+                    onClick={() => remove(c)}
+                  >
+                    <IconTrash />
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        ))}
+      </Group>
+      <Div>
+        <Footnote className="cp-cat-hint">
+          При удалении посты и заготовки этой тематики перейдут в «Другое».
+        </Footnote>
+      </Div>
+    </div>
+  );
+}
+
 export default function App() {
   const isMobile = useIsMobile();
   const [cursor, setCursor] = useState(() => startOfMonth(new Date()));
@@ -1498,6 +1708,7 @@ export default function App() {
   const [tplDraft, setTplDraft] = useState(null);
   const [tplCategory, setTplCategory] = useState('Все');
   const [tplSelectMode, setTplSelectMode] = useState(false);
+  const [categories, setCategories] = useState(() => [...DEFAULT_CATEGORIES]);
   const [history, setHistory] = useState([]);
   const [snack, setSnack] = useState(null);
   const [movePost, setMovePost] = useState(null);
@@ -1552,6 +1763,20 @@ export default function App() {
     }
   }, []);
 
+  const loadCategories = useCallback(async () => {
+    try {
+      const data = await api('/api/categories');
+      if (Array.isArray(data) && data.length) {
+        setCategories(data);
+        setTplCategory((cur) =>
+          cur === 'Все' || data.includes(cur) ? cur : 'Все'
+        );
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }, []);
+
   useEffect(() => {
     loadPosts();
   }, [loadPosts]);
@@ -1559,7 +1784,8 @@ export default function App() {
   useEffect(() => {
     loadTemplates();
     loadPlanPosts();
-  }, [loadTemplates, loadPlanPosts]);
+    loadCategories();
+  }, [loadTemplates, loadPlanPosts, loadCategories]);
 
   useEffect(() => {
     loadHistory();
@@ -1574,6 +1800,7 @@ export default function App() {
         loadPlanPosts();
         loadTemplates();
         loadHistory();
+        loadCategories();
       });
     }
     // Local Express API: poll so another open client sees changes
@@ -1583,12 +1810,24 @@ export default function App() {
       if (activePanel === 'history' || activePanel === 'history-detail') {
         loadHistory();
       }
-      if (activePanel === 'templates' || activePanel === 'template-edit') {
+      if (
+        activePanel === 'templates' ||
+        activePanel === 'template-edit' ||
+        activePanel === 'categories'
+      ) {
         loadTemplates();
+        loadCategories();
       }
     }, 4000);
     return () => clearInterval(id);
-  }, [loadPosts, loadPlanPosts, loadTemplates, loadHistory, activePanel]);
+  }, [
+    loadPosts,
+    loadPlanPosts,
+    loadTemplates,
+    loadHistory,
+    loadCategories,
+    activePanel,
+  ]);
 
   useEffect(() => {
     (async () => {
@@ -1803,7 +2042,9 @@ export default function App() {
   const story =
     activePanel === 'history' || activePanel === 'history-detail'
       ? 'history'
-      : activePanel === 'templates' || activePanel === 'template-edit'
+      : activePanel === 'templates' ||
+          activePanel === 'template-edit' ||
+          activePanel === 'categories'
         ? 'templates'
         : 'main';
 
@@ -1819,7 +2060,19 @@ export default function App() {
   const historyPanel =
     activePanel === 'history-detail' ? 'history-detail' : 'history';
   const templatesPanel =
-    activePanel === 'template-edit' ? 'template-edit' : 'templates';
+    activePanel === 'template-edit'
+      ? 'template-edit'
+      : activePanel === 'categories'
+        ? 'categories'
+        : 'templates';
+
+  const afterCategoriesChanged = () => {
+    loadCategories();
+    loadTemplates();
+    loadPlanPosts();
+    loadPosts();
+    loadHistory();
+  };
 
   const goTab = (id) => {
     if (id === 'history') {
@@ -1829,6 +2082,7 @@ export default function App() {
     if (id === 'templates') {
       setTplSelectMode(false);
       loadTemplates();
+      loadCategories();
     }
     setActivePanel(id);
   };
@@ -1939,6 +2193,7 @@ export default function App() {
                 `${draft.draftDate}-${draft.kind || 'post'}-${draft.network || 'vk'}`
               }
               draft={draft}
+              categories={categories}
               onBack={backFromEdit}
               onSaved={afterSave}
               onDeleted={afterDelete}
@@ -2065,10 +2320,30 @@ export default function App() {
             onEdit={openTplEdit}
             onAdd={() => openTplEdit(null)}
             onQuickDelete={quickDeleteTemplate}
+            onManageCategories={() => setActivePanel('categories')}
+            categories={categories}
             posts={planPosts}
             history={history}
           />
           {snack && activePanel === 'templates' && (
+            <Snackbar onClose={() => setSnack(null)}>{snack}</Snackbar>
+          )}
+        </Panel>
+
+        <Panel id="categories">
+          <PanelHeader
+            before={
+              <PanelHeaderBack onClick={() => setActivePanel('templates')} />
+            }
+          >
+            Тематики
+          </PanelHeader>
+          <CategoriesManageBody
+            categories={categories}
+            onChanged={afterCategoriesChanged}
+            onSnack={setSnack}
+          />
+          {snack && activePanel === 'categories' && (
             <Snackbar onClose={() => setSnack(null)}>{snack}</Snackbar>
           )}
         </Panel>
@@ -2090,6 +2365,7 @@ export default function App() {
             <TemplateFormBody
               key={tplDraft.id || 'new-tpl'}
               draft={tplDraft}
+              categories={categories}
               onBack={() => {
                 setTplDraft(null);
                 setActivePanel('templates');

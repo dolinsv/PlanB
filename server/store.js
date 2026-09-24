@@ -42,11 +42,24 @@ const SEED_TEMPLATES = [
   },
 ];
 
+const DEFAULT_CATEGORIES = [
+  'Дети',
+  'Семья',
+  'Отношения',
+  'Бизнес',
+  'Реклама',
+  'Юмор',
+  'Мотивация',
+  'Система',
+  'Другое',
+];
+
 function emptyStore() {
   return {
     posts: [],
     templates: SEED_TEMPLATES.map((t, i) => ({ id: i + 1, ...t })),
     history: [],
+    categories: [...DEFAULT_CATEGORIES],
     seq: { posts: 1, templates: SEED_TEMPLATES.length + 1, history: 1 },
   };
 }
@@ -93,6 +106,10 @@ export function createStore(rootDir) {
       posts: (raw.posts || []).map(normalizePost),
       templates: raw.templates || [],
       history: raw.history || [],
+      categories:
+        Array.isArray(raw.categories) && raw.categories.length
+          ? raw.categories.map((c) => String(c).trim()).filter(Boolean)
+          : [...DEFAULT_CATEGORIES],
       seq: raw.seq || { posts: 1, templates: 1, history: 1 },
     };
     return cache;
@@ -225,6 +242,76 @@ export function createStore(rootDir) {
         const before = s.history.length;
         s.history = s.history.filter((h) => h.id !== Number(id));
         return s.history.length < before;
+      });
+    },
+    getCategories() {
+      const s = load();
+      if (!Array.isArray(s.categories) || !s.categories.length) {
+        return [...DEFAULT_CATEGORIES];
+      }
+      return [...s.categories];
+    },
+    addCategory(name) {
+      return update((s) => {
+        if (!Array.isArray(s.categories) || !s.categories.length) {
+          s.categories = [...DEFAULT_CATEGORIES];
+        }
+        const n = String(name || '').trim();
+        if (!n) return { error: 'name required' };
+        if (s.categories.includes(n)) return { error: 'already exists' };
+        s.categories.push(n);
+        return { categories: [...s.categories] };
+      });
+    },
+    renameCategory(from, to) {
+      return update((s) => {
+        if (!Array.isArray(s.categories) || !s.categories.length) {
+          s.categories = [...DEFAULT_CATEGORIES];
+        }
+        const oldName = String(from || '').trim();
+        const newName = String(to || '').trim();
+        if (!oldName || !newName) return { error: 'from and to required' };
+        const idx = s.categories.indexOf(oldName);
+        if (idx === -1) return { error: 'not found' };
+        if (newName !== oldName && s.categories.includes(newName)) {
+          return { error: 'already exists' };
+        }
+        s.categories[idx] = newName;
+        for (const t of s.templates) {
+          if (t.category === oldName) t.category = newName;
+        }
+        for (const p of s.posts) {
+          if (p.category === oldName) p.category = newName;
+        }
+        for (const h of s.history) {
+          if (h.category === oldName) h.category = newName;
+        }
+        return { categories: [...s.categories] };
+      });
+    },
+    deleteCategory(name) {
+      return update((s) => {
+        if (!Array.isArray(s.categories) || !s.categories.length) {
+          s.categories = [...DEFAULT_CATEGORIES];
+        }
+        const n = String(name || '').trim();
+        if (!n) return { error: 'name required' };
+        if (n === 'Другое') return { error: 'cannot delete default' };
+        if (s.categories.length <= 1) return { error: 'last category' };
+        const idx = s.categories.indexOf(n);
+        if (idx === -1) return { error: 'not found' };
+        s.categories.splice(idx, 1);
+        if (!s.categories.includes('Другое')) s.categories.push('Другое');
+        for (const t of s.templates) {
+          if (t.category === n) t.category = 'Другое';
+        }
+        for (const p of s.posts) {
+          if (p.category === n) p.category = 'Другое';
+        }
+        for (const h of s.history) {
+          if (h.category === n) h.category = 'Другое';
+        }
+        return { categories: [...s.categories] };
       });
     },
   };
