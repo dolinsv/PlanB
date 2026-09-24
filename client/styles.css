@@ -1119,16 +1119,17 @@ body {
 
 .cp-when {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  grid-template-columns: 1.35fr 1fr;
+  gap: 8px;
   width: 100%;
+  align-items: end;
 }
 
 .cp-when__field {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 
 .cp-when__label {
@@ -1137,14 +1138,31 @@ body {
   color: var(--vkui--color_text_secondary);
 }
 
+.cp-when .vkuiFormField,
+.cp-when .vkuiInput {
+  min-height: 40px;
+}
+
 @media (max-width: 480px) {
   .cp-when {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1.4fr 0.9fr;
+    gap: 8px;
   }
 
+  .cp-when__label {
+    font-size: 11px;
+  }
+
+  .cp-when .vkuiFormField,
+  .cp-when .vkuiInput,
   .cp-when input {
-    min-height: 44px;
-    font-size: 16px;
+    min-height: 38px !important;
+    font-size: 15px !important;
+  }
+
+  .cp-post-form .vkuiFormItem:has(.cp-when) {
+    padding-top: 6px;
+    padding-bottom: 6px;
   }
 }
 
