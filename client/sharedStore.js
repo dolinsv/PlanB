@@ -451,14 +451,6 @@ export function subscribeStore(fn) {
   return () => listeners.delete(fn);
 }
 
-export function syncMode() {
-  return isRemoteSyncEnabled() ? 'remote' : 'local';
-}
-
-export function getSyncStatus() {
-  return syncState;
-}
-
 export function subscribeSyncStatus(fn) {
   syncListeners.add(fn);
   fn(syncState);

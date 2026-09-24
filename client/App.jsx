@@ -5,7 +5,6 @@ import {
   View,
   PanelHeader,
   PanelHeaderBack,
-  PanelHeaderButton,
   Group,
   Header,
   Div,
@@ -13,8 +12,6 @@ import {
   FormItem,
   Textarea,
   Input,
-  CellButton,
-  Placeholder,
   Epic,
   Tabbar,
   TabbarItem,
@@ -126,10 +123,6 @@ function templatePlanInfo(text, posts, history) {
     };
   }
   return { status: null };
-}
-
-function templateUsageStatus(text, posts, history) {
-  return templatePlanInfo(text, posts, history).status;
 }
 
 function formatPlanDay(iso) {
@@ -696,33 +689,33 @@ function WeekPanelBody({ weekStart, posts, onOpenPost, onShiftWeek }) {
   return (
     <div className="cp-form-block">
       <Group>
-        <Div className="cp-week-nav">
-          <button
-            type="button"
-            className="cp-week-nav__btn"
-            onClick={() => onShiftWeek?.(-1)}
-            aria-label="Предыдущая неделя"
-          >
-            ‹
-          </button>
-          <div className="cp-week-nav__label">
-            <div className="cp-week-nav__title">Неделя</div>
-            <div className="cp-week-nav__range">{rangeLabel}</div>
-          </div>
-          <button
-            type="button"
-            className="cp-week-nav__btn"
-            onClick={() => onShiftWeek?.(1)}
-            aria-label="Следующая неделя"
-          >
-            ›
-          </button>
-        </Div>
         <Div>
-          <div className="cp-week-summary">
-            {total
-              ? `${total} публикац${total === 1 ? 'ия' : total < 5 ? 'ии' : 'ий'}`
-              : 'На этой неделе пока пусто'}
+          <div className="cp-week-hero">
+            <button
+              type="button"
+              className="cp-week-nav__btn"
+              onClick={() => onShiftWeek?.(-1)}
+              aria-label="Предыдущая неделя"
+            >
+              ‹
+            </button>
+            <div className="cp-week-nav__label">
+              <div className="cp-week-nav__title">Неделя</div>
+              <div className="cp-week-nav__range">{rangeLabel}</div>
+              <div className="cp-week-summary">
+                {total
+                  ? `${total} публикац${total === 1 ? 'ия' : total < 5 ? 'ии' : 'ий'}`
+                  : 'Пока пусто'}
+              </div>
+            </div>
+            <button
+              type="button"
+              className="cp-week-nav__btn"
+              onClick={() => onShiftWeek?.(1)}
+              aria-label="Следующая неделя"
+            >
+              ›
+            </button>
           </div>
         </Div>
       </Group>
@@ -1071,17 +1064,27 @@ function DayPanelBody({ year, month, day, posts, onAdd, onEdit, onMove, onDelete
 
       <Group header={<Header mode="secondary">Расписание</Header>}>
         {posts.length === 0 ? (
-          <Placeholder
-            className="cp-anim"
-            header="Нет публикаций"
-            action={
-              <Button size="m" onClick={onAdd}>
-                Добавить
-              </Button>
-            }
-          >
-            Пост, клип или сторис — для VK и Instagram
-          </Placeholder>
+          <Div>
+            <div className="cp-day-empty">
+              <div className="cp-day-empty__title">Нет публикаций</div>
+              <div className="cp-day-empty__hint">
+                Пост, клип или сторис — для VK и Instagram
+              </div>
+              <button type="button" className="cp-add-tpl" onClick={onAdd}>
+                <span className="cp-add-tpl__ico" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M12 5v14M5 12h14"
+                      stroke="currentColor"
+                      strokeWidth="2.2"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                </span>
+                <span className="cp-add-tpl__label">Добавить публикацию</span>
+              </button>
+            </div>
+          </Div>
         ) : (
           <div className="cp-day-list">
             {posts.map((p) => {
@@ -1090,18 +1093,17 @@ function DayPanelBody({ year, month, day, posts, onAdd, onEdit, onMove, onDelete
               const done = p.reminded === 1;
               return (
                 <div key={p.id} className="cp-day-row">
-                  <button
-                    type="button"
-                    className="cp-kind-icon"
-                    style={{
-                      background: pillColor(p),
-                      opacity: done ? 0.62 : 1,
-                      border: 0,
-                      cursor: 'pointer',
-                    }}
-                    onClick={() => onEdit(p)}
-                    aria-label="Редактировать"
-                  >
+                    <button
+                      type="button"
+                      className={`cp-kind-icon${done ? ' cp-kind-icon--done' : ''}`}
+                      style={{
+                        background: pillColor(p),
+                        border: 0,
+                        cursor: 'pointer',
+                      }}
+                      onClick={() => onEdit(p)}
+                      aria-label="Редактировать"
+                    >
                     <KindIcon kind={p.kind} />
                   </button>
                   <button
@@ -1165,16 +1167,32 @@ function DayPanelBody({ year, month, day, posts, onAdd, onEdit, onMove, onDelete
           </div>
         )}
         {posts.length > 0 && (
-          <CellButton centered onClick={onAdd}>
-            Добавить публикацию
-          </CellButton>
+          <Div>
+            <button
+              type="button"
+              className="cp-add-tpl"
+              onClick={onAdd}
+            >
+              <span className="cp-add-tpl__ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M12 5v14M5 12h14"
+                    stroke="currentColor"
+                    strokeWidth="2.2"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              </span>
+              <span className="cp-add-tpl__label">Добавить публикацию</span>
+            </button>
+          </Div>
         )}
       </Group>
     </>
   );
 }
 
-function MoveFormBody({ post, onBack, onMoved }) {
+function MoveFormBody({ post, onMoved }) {
   const current = new Date(post.publish_at);
   const today = new Date();
   const quick = [
@@ -1216,14 +1234,25 @@ function MoveFormBody({ post, onBack, onMoved }) {
   };
 
   return (
-    <div className="cp-form-block">
+    <div className="cp-form-block cp-move-form">
       <Group>
         <Div>
-          <div className="cp-day-hero">
-            <h2 className="cp-day-hero__title">Перенести</h2>
-            <div className="cp-day-hero__meta">
-              Время {formatTime(post.publish_at)} сохранится ·{' '}
-              {post.text?.trim()?.slice(0, 80) || '(без текста)'}
+          <div
+            className="cp-type-banner"
+            style={{ background: (KIND_MAP[post.kind] || KIND_MAP.post).color }}
+          >
+            <div className="cp-type-banner__badge">
+              <KindIcon kind={post.kind || 'post'} />
+            </div>
+            <div className="cp-type-banner__text">
+              <div className="cp-type-banner__title">Перенести</div>
+              <div className="cp-type-banner__sub">
+                Время {formatTime(post.publish_at)} сохранится ·{' '}
+                {post.text?.trim()?.slice(0, 60) || '(без текста)'}
+              </div>
+            </div>
+            <div className="cp-type-banner__net" aria-hidden="true">
+              <NetBadge network={post.network || 'vk'} size="lg" />
             </div>
           </div>
         </Div>
@@ -1249,34 +1278,34 @@ function MoveFormBody({ post, onBack, onMoved }) {
             })}
           </div>
         </FormItem>
-        <FormItem top="Или выберите дату">
-          <Input
-            type="date"
-            value={dateVal}
-            onChange={(e) => {
-              setDateVal(e.target.value);
-              setPicked(e.target.value);
-            }}
-          />
+        <FormItem className="cp-when-item" top="Или выберите дату">
+          <div className="cp-when">
+            <div className="cp-when__field">
+              <div className="cp-when__label">Дата</div>
+              <Input
+                type="date"
+                value={dateVal}
+                onChange={(e) => {
+                  setDateVal(e.target.value);
+                  setPicked(e.target.value);
+                }}
+              />
+            </div>
+          </div>
         </FormItem>
       </Group>
-      <Group>
-        <Div>
-          <Button
-            size="l"
-            stretched
-            disabled={busy || !dateVal}
-            onClick={applyFromInput}
-          >
-            Перенести на выбранную дату
-          </Button>
-        </Div>
-        <Div>
-          <Button size="l" stretched mode="secondary" onClick={onBack}>
-            Отмена
-          </Button>
-        </Div>
-      </Group>
+      <div className="cp-post-sticky">
+        <button
+          type="button"
+          className="cp-post-sticky__save"
+          disabled={busy || !dateVal}
+          onClick={applyFromInput}
+          aria-label="Перенести"
+          title="Перенести"
+        >
+          <IconMove />
+        </button>
+      </div>
     </div>
   );
 }
@@ -1287,7 +1316,6 @@ function PostFormBody({
   onSaved,
   onDeleted,
   onPickTemplate,
-  onSnack,
   categories,
 }) {
   const themeList =
@@ -1343,10 +1371,7 @@ function PostFormBody({
   };
 
   const save = async () => {
-    if (!text.trim()) {
-      onSnack?.('Добавьте текст или выберите заготовку');
-      return;
-    }
+    if (!text.trim()) return;
     setBusy(true);
     try {
       const body = {
@@ -1386,17 +1411,12 @@ function PostFormBody({
 
   const copyText = async () => {
     const payload = text.trim();
-    if (!payload) {
-      onSnack?.('Нет текста для копирования');
-      return;
-    }
+    if (!payload) return;
     setCopyBusy(true);
     try {
       await copyToClipboard(payload);
-      onSnack?.('Текст скопирован');
     } catch (e) {
       console.error(e);
-      onSnack?.('Не удалось скопировать');
     } finally {
       setCopyBusy(false);
     }
@@ -1683,7 +1703,7 @@ function PostFormBody({
   );
 }
 
-function HistoryDetailBody({ entry, onSnack, onDeleted }) {
+function HistoryDetailBody({ entry, onDeleted }) {
   const meta = KIND_MAP[entry.kind] || KIND_MAP.post;
   const net = NETWORK_MAP[entry.network] || NETWORK_MAP.vk;
   const [copyBusy, setCopyBusy] = useState(false);
@@ -1691,17 +1711,12 @@ function HistoryDetailBody({ entry, onSnack, onDeleted }) {
 
   const copyText = async () => {
     const payload = (entry.text || '').trim();
-    if (!payload) {
-      onSnack?.('Нет текста для копирования');
-      return;
-    }
+    if (!payload) return;
     setCopyBusy(true);
     try {
       await copyToClipboard(payload);
-      onSnack?.('Текст скопирован');
     } catch (e) {
       console.error(e);
-      onSnack?.('Не удалось скопировать');
     } finally {
       setCopyBusy(false);
     }
@@ -1714,7 +1729,6 @@ function HistoryDetailBody({ entry, onSnack, onDeleted }) {
       onDeleted?.();
     } catch (e) {
       console.error(e);
-      onSnack?.('Не удалось удалить');
     } finally {
       setBusy(false);
     }
@@ -1729,7 +1743,7 @@ function HistoryDetailBody({ entry, onSnack, onDeleted }) {
   ];
 
   return (
-    <div className="cp-form-block">
+    <div className="cp-form-block cp-history-form">
       <Group>
         <Div>
           <div
@@ -1745,9 +1759,27 @@ function HistoryDetailBody({ entry, onSnack, onDeleted }) {
                 {net.label} · {entry.category || 'Другое'} · размещена
               </div>
             </div>
+            <div className="cp-type-banner__net" aria-hidden="true">
+              <NetBadge network={entry.network || 'vk'} size="lg" />
+            </div>
           </div>
         </Div>
         <FormItem top="Текст">
+          <div className="cp-text-toolbar">
+            <Button
+              size="s"
+              mode="secondary"
+              disabled={copyBusy || !(entry.text || '').trim()}
+              onClick={copyText}
+              before={
+                <span className="cp-btn-ico" aria-hidden="true">
+                  <IconCopy />
+                </span>
+              }
+            >
+              Скопировать
+            </Button>
+          </div>
           <div className="cp-history-text">
             {entry.text?.trim() || '(без текста)'}
           </div>
@@ -1763,41 +1795,18 @@ function HistoryDetailBody({ entry, onSnack, onDeleted }) {
           </div>
         </Div>
       </Group>
-      <Group>
-        <Div>
-          <Button
-            size="l"
-            stretched
-            mode="secondary"
-            disabled={copyBusy || !(entry.text || '').trim()}
-            onClick={copyText}
-            before={
-              <span className="cp-btn-ico" aria-hidden="true">
-                <IconCopy />
-              </span>
-            }
-          >
-            Скопировать текст
-          </Button>
-        </Div>
-        <Div>
-          <Button
-            size="l"
-            stretched
-            mode="secondary"
-            appearance="negative"
-            disabled={busy}
-            onClick={remove}
-            before={
-              <span className="cp-btn-ico" aria-hidden="true">
-                <IconTrash />
-              </span>
-            }
-          >
-            Удалить из истории
-          </Button>
-        </Div>
-      </Group>
+      <div className="cp-post-sticky">
+        <button
+          type="button"
+          className="cp-post-sticky__danger"
+          disabled={busy}
+          onClick={remove}
+          aria-label="Удалить из истории"
+          title="Удалить из истории"
+        >
+          <IconTrash />
+        </button>
+      </div>
     </div>
   );
 }
@@ -1916,22 +1925,39 @@ function TemplatesList({
       </Div>
       <Group>
         {filtered.length === 0 ? (
-          <Placeholder
-            header={query.trim() ? 'Ничего не найдено' : 'Нет заготовок'}
-            action={
-              !selectMode && !query.trim() ? (
-                <Button size="m" mode="primary" onClick={() => onAdd?.()}>
-                  Создать первую
-                </Button>
-              ) : null
-            }
-          >
-            {query.trim()
-              ? 'Попробуйте другой запрос или смените тематику'
-              : selectMode
-                ? 'В этой тематике пока пусто'
-                : 'Создайте тексты по тематикам — они появятся здесь'}
-          </Placeholder>
+          <Div>
+            <div className="cp-day-empty">
+              <div className="cp-day-empty__title">
+                {query.trim() ? 'Ничего не найдено' : 'Нет заготовок'}
+              </div>
+              <div className="cp-day-empty__hint">
+                {query.trim()
+                  ? 'Попробуйте другой запрос или смените тематику'
+                  : selectMode
+                    ? 'В этой тематике пока пусто'
+                    : 'Создайте тексты по тематикам — они появятся здесь'}
+              </div>
+              {!selectMode && !query.trim() && (
+                <button
+                  type="button"
+                  className="cp-add-tpl"
+                  onClick={() => onAdd?.()}
+                >
+                  <span className="cp-add-tpl__ico" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none">
+                      <path
+                        d="M12 5v14M5 12h14"
+                        stroke="currentColor"
+                        strokeWidth="2.2"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                  </span>
+                  <span className="cp-add-tpl__label">Создать первую</span>
+                </button>
+              )}
+            </div>
+          </Div>
         ) : (
           filtered.map((t) => {
             const info = templatePlanInfo(t.text, posts, history);
@@ -2161,7 +2187,7 @@ function TemplateFormBody({ draft, onBack, onSaved, onDeleted, categories }) {
   );
 }
 
-function CategoriesManageBody({ categories, onChanged, onSnack }) {
+function CategoriesManageBody({ categories, onChanged }) {
   const [name, setName] = useState('');
   const [editing, setEditing] = useState(null);
   const [editValue, setEditValue] = useState('');
@@ -2178,11 +2204,9 @@ function CategoriesManageBody({ categories, onChanged, onSnack }) {
         body: JSON.stringify({ name: n }),
       });
       setName('');
-      onSnack?.('Тематика добавлена');
       onChanged?.();
     } catch (e) {
       console.error(e);
-      onSnack?.(e?.message === 'already exists' ? 'Уже есть такая тематика' : 'Не удалось добавить');
     } finally {
       setBusy(false);
     }
@@ -2212,15 +2236,9 @@ function CategoriesManageBody({ categories, onChanged, onSnack }) {
         body: JSON.stringify({ from: editing, to }),
       });
       cancelEdit();
-      onSnack?.('Тематика изменена');
       onChanged?.();
     } catch (e) {
       console.error(e);
-      onSnack?.(
-        e?.message === 'already exists'
-          ? 'Уже есть такая тематика'
-          : 'Не удалось изменить'
-      );
     } finally {
       setBusy(false);
     }
@@ -2235,19 +2253,37 @@ function CategoriesManageBody({ categories, onChanged, onSnack }) {
         method: 'DELETE',
       });
       if (editing === cat) cancelEdit();
-      onSnack?.('Тематика удалена');
       onChanged?.();
     } catch (e) {
       console.error(e);
-      onSnack?.('Не удалось удалить');
     } finally {
       setBusy(false);
     }
   };
 
   return (
-    <div className="cp-form-block">
+    <div className="cp-form-block cp-cat-form">
       <Group>
+        <Div>
+          <div className="cp-tpl-hero">
+            <div className="cp-tpl-hero__badge" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M5 7h14M5 12h10M5 17h12"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </div>
+            <div className="cp-tpl-hero__text">
+              <div className="cp-tpl-hero__title">Тематики</div>
+              <div className="cp-tpl-hero__sub">
+                Для фильтрации заготовок и постов
+              </div>
+            </div>
+          </div>
+        </Div>
         <FormItem top="Новая тематика">
           <div className="cp-cat-add">
             <Input
@@ -2930,7 +2966,6 @@ export default function App() {
             <MoveFormBody
               key={movePost.id}
               post={movePost}
-              onBack={backFromMove}
               onMoved={afterMoved}
             />
           )}
@@ -2942,9 +2977,14 @@ export default function App() {
           <PanelHeader>История</PanelHeader>
           <Group>
             {history.length === 0 ? (
-              <Placeholder header="Пока пусто">
-                Отметьте «Размещена» в редактировании — запись появится здесь
-              </Placeholder>
+              <Div>
+                <div className="cp-day-empty">
+                  <div className="cp-day-empty__title">Пока пусто</div>
+                  <div className="cp-day-empty__hint">
+                    Отметьте «Размещена» в редактировании — запись появится здесь
+                  </div>
+                </div>
+              </Div>
             ) : (
               history.map((h) => {
                 const meta = KIND_MAP[h.kind] || KIND_MAP.post;
