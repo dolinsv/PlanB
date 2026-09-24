@@ -389,21 +389,33 @@ function toDateInputValue(date) {
 function IconMove() {
   return (
     <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M7 7h7M14 7l-2.5-2.5M14 7l-2.5 2.5"
+      <rect
+        x="3.5"
+        y="5"
+        width="17"
+        height="15"
+        rx="3"
         stroke="currentColor"
-        strokeWidth="1.8"
+        strokeWidth="1.7"
+      />
+      <path
+        d="M3.5 10h17"
+        stroke="currentColor"
+        strokeWidth="1.7"
+      />
+      <path
+        d="M8 3.5v3.5M16 3.5v3.5"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+      />
+      <path
+        d="M9.5 15.5h5M12.5 13l2.5 2.5-2.5 2.5"
+        stroke="currentColor"
+        strokeWidth="1.7"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-      <path
-        d="M17 17H10M10 17l2.5 2.5M10 17l2.5-2.5"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <rect x="4" y="4" width="16" height="16" rx="3" stroke="currentColor" strokeWidth="1.5" opacity="0.35" />
     </svg>
   );
 }
