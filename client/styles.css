@@ -1520,11 +1520,36 @@ body {
   gap: 2px;
 }
 
+.cp-soon-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  padding: 4px 12px 12px !important;
+}
+
+.cp-soon {
+  display: flex;
+  gap: 6px;
+  padding: 0 !important;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.cp-soon::-webkit-scrollbar {
+  display: none;
+}
+
+.cp-soon-wrap .cp-sync {
+  align-self: center;
+  margin: 0;
+}
+
 .cp-sync {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  margin-right: 4px;
   padding: 3px 8px;
   border-radius: 999px;
   font-size: 11px;
