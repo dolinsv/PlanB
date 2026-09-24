@@ -1316,8 +1316,90 @@ body {
   touch-action: pan-y;
 }
 
+.cp-tpl-form {
+  padding-bottom: 76px;
+  overscroll-behavior: none;
+  touch-action: pan-y;
+}
+
+.cp-tpl-hero {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  color: #0f3f4a;
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--cp-accent) 12%, #fff) 0%,
+      color-mix(in srgb, #67e8f9 16%, #fff) 55%,
+      color-mix(in srgb, #fef3c7 18%, #fff) 100%
+    );
+  border: 1px solid color-mix(in srgb, var(--cp-accent) 16%, transparent);
+  box-sizing: border-box;
+}
+
+.cp-tpl-hero__badge {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: color-mix(in srgb, var(--cp-accent) 14%, #fff);
+  color: var(--cp-accent);
+}
+
+.cp-tpl-hero__badge svg {
+  width: 22px;
+  height: 22px;
+  display: block;
+}
+
+.cp-tpl-hero__text {
+  min-width: 0;
+}
+
+.cp-tpl-hero__title {
+  font-size: 16px;
+  font-weight: 750;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+.cp-tpl-hero__sub {
+  margin-top: 3px;
+  font-size: 13px;
+  font-weight: 550;
+  color: color-mix(in srgb, #0f3f4a 70%, transparent);
+}
+
+.cp-tpl-hero__sub strong {
+  font-weight: 750;
+  color: var(--cp-accent);
+}
+
+.cp-tpl-form .vkuiFormItem {
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+
+.cp-tpl-form .vkuiTextarea,
+.cp-tpl-form .vkuiTextarea__el,
+.cp-tpl-form textarea {
+  overscroll-behavior: contain;
+  max-height: min(40vh, 260px);
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+}
+
 .cp-post-form .vkuiGroup,
-.cp-post-form .vkuiFormItem {
+.cp-post-form .vkuiFormItem,
+.cp-tpl-form .vkuiGroup,
+.cp-tpl-form .vkuiFormItem {
   overscroll-behavior: none;
 }
 

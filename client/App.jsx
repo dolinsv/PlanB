@@ -1992,6 +1992,7 @@ function TemplateFormBody({ draft, onBack, onSaved, onDeleted, categories }) {
   const [confirmDel, setConfirmDel] = useState(false);
 
   const save = async () => {
+    if (!text.trim()) return;
     setBusy(true);
     try {
       const body = { category, text };
@@ -2025,8 +2026,37 @@ function TemplateFormBody({ draft, onBack, onSaved, onDeleted, categories }) {
   };
 
   return (
-    <div className="cp-form-block">
+    <div className="cp-form-block cp-tpl-form">
       <Group>
+        <Div>
+          <div className="cp-tpl-hero">
+            <div className="cp-tpl-hero__badge" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M7 4h10a2 2 0 0 1 2 2v14l-3.2-2H7a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinejoin="round"
+                />
+                <path
+                  d="M9 9h6M9 12.5h4"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </div>
+            <div className="cp-tpl-hero__text">
+              <div className="cp-tpl-hero__title">
+                {isEdit ? 'Редактирование' : 'Новая заготовка'}
+              </div>
+              <div className="cp-tpl-hero__sub">
+                Тематика · <strong>{category || 'Другое'}</strong>
+              </div>
+            </div>
+          </div>
+        </Div>
+
         <FormItem top="Тематика">
           <div className="cp-tpl-filter" role="listbox" aria-label="Тематика">
             {themeList.map((c) => (
@@ -2041,40 +2071,47 @@ function TemplateFormBody({ draft, onBack, onSaved, onDeleted, categories }) {
             ))}
           </div>
         </FormItem>
-        <FormItem top="Текст заготовки">
-          <Textarea
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            placeholder="Готовый текст для поста…"
-          />
+
+        <FormItem top="Текст">
+          <div
+            className="cp-post-textarea-wrap"
+            onTouchMove={(e) => e.stopPropagation()}
+          >
+            <Textarea
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              placeholder="Готовый текст для поста…"
+            />
+          </div>
         </FormItem>
       </Group>
-      <Group>
-        <Div>
-          <Button
-            size="l"
-            stretched
-            disabled={busy || !text.trim()}
-            onClick={save}
-          >
-            Сохранить
-          </Button>
-        </Div>
+
+      <div className="cp-post-sticky">
         {isEdit && (
-          <Div>
-            <Button
-              size="l"
-              stretched
-              mode="secondary"
-              appearance="negative"
-              disabled={busy}
-              onClick={() => setConfirmDel(true)}
-            >
-              Удалить
-            </Button>
-          </Div>
+          <button
+            type="button"
+            className="cp-post-sticky__danger"
+            disabled={busy}
+            onClick={() => setConfirmDel(true)}
+            aria-label="Удалить"
+            title="Удалить"
+          >
+            <IconTrash />
+          </button>
         )}
-      </Group>
+        <button
+          type="button"
+          className="cp-post-sticky__save"
+          disabled={busy || !text.trim()}
+          onClick={save}
+          aria-label="Сохранить"
+          title="Сохранить"
+        >
+          <IconSave />
+          <span>Сохранить</span>
+        </button>
+      </div>
+
       {confirmDel && (
         <ConfirmDialog
           title="Удалить заготовку?"
