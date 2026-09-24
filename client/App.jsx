@@ -221,18 +221,30 @@ function pillColor(p) {
 
 function NetIcon({ network }) {
   if (network === 'instagram') {
+    // Official Instagram glyph (Meta)
     return (
-      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <rect x="3" y="3" width="18" height="18" rx="5" stroke="currentColor" strokeWidth="2" />
-        <circle cx="12" cy="12" r="4" stroke="currentColor" strokeWidth="2" />
-        <circle cx="17.5" cy="6.5" r="1.2" fill="currentColor" />
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" />
       </svg>
     );
   }
+  // Official VK app glyph
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path d="M12.6 2C7.2 2 4 5.3 4 10.1c0 3.1 1.6 5.6 4.4 6.4V22l4-2.2c.4 0 .8.1 1.2.1 5.4 0 9.2-3.4 9.2-9.8C22.8 5.3 18.5 2 12.6 2zm5 8.3h-1.8c-.2 2-.9 3.4-2 4.2v1.6h-1.9v-1.5c-.3 0-.6.1-.9.1-1.7 0-2.9-1.3-2.9-3.5V9.1H6.2V7.5h1.9V5.3h1.9v2.2h2.1v1.6H9.9v1.8c0 1 .4 1.5 1.2 1.5.3 0 .6 0 .8-.1v-1.7c1.6-.2 2.7-1.6 3-3.4H17.6v1.6z" />
+      <path d="M15.684 0H8.316C1.592 0 0 1.592 0 8.316v7.368C0 22.408 1.592 24 8.316 24h7.368C22.408 24 24 22.408 24 15.684V8.316C24 1.592 22.408 0 15.684 0zm3.692 17.123h-1.744c-.66 0-.862-.525-2.05-1.714-1.033-.997-1.49-1.135-1.744-1.135-.356 0-.458.102-.458.593v1.575c0 .424-.135.688-1.253.688-1.846 0-3.896-1.118-5.335-3.202C4.624 10.873 4.03 8.114 4.03 7.663c0-.254.102-.491.593-.491h1.744c.44 0 .61.203.78.678.863 2.49 2.303 4.675 2.896 4.675.22 0 .322-.102.322-.66V9.721c-.068-1.186-.695-1.287-.695-1.71 0-.203.17-.407.44-.407h2.744c.39 0 .542.203.542.643v3.572c0 .372.17.508.271.508.22 0 .407-.136.813-.542 1.254-1.406 2.151-3.574 2.151-3.574.119-.254.322-.491.763-.491h1.744c.525 0 .644.27.525.643-.22 1.017-2.354 4.031-2.354 4.031-.186.305-.254.44 0 .78.186.254.796.779 1.203 1.253.745.847 1.32 1.558 1.473 2.05.17.49-.085.744-.576.744z" />
     </svg>
+  );
+}
+
+function NetBadge({ network, size = 'sm' }) {
+  const isIg = network === 'instagram';
+  return (
+    <span
+      className={`cp-net ${isIg ? 'cp-net--ig' : 'cp-net--vk'}${size === 'lg' ? ' cp-net--lg' : ''}`}
+      title={isIg ? 'Instagram' : 'ВКонтакте'}
+    >
+      <NetIcon network={network || 'vk'} />
+    </span>
   );
 }
 
@@ -349,18 +361,6 @@ function IconTrash() {
         strokeLinejoin="round"
       />
     </svg>
-  );
-}
-
-function NetBadge({ network, size = 'sm' }) {
-  const isIg = network === 'instagram';
-  return (
-    <span
-      className={`cp-net ${isIg ? 'cp-net--ig' : 'cp-net--vk'}${size === 'lg' ? ' cp-net--lg' : ''}`}
-      title={isIg ? 'Instagram' : 'ВКонтакте'}
-    >
-      <NetIcon network={network || 'vk'} />
-    </span>
   );
 }
 
@@ -662,7 +662,7 @@ function DayPanelBody({ year, month, day, posts, onAdd, onEdit, onMove }) {
                     <span className="cp-day-row__time">
                       {formatTime(p.publish_at)}
                     </span>
-                    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                    <div className="cp-day-row__tools">
                       <NetBadge network={p.network || 'vk'} size="lg" />
                       <button
                         type="button"
@@ -907,7 +907,7 @@ function PostFormBody({ draft, onBack, onSaved, onDeleted, onPickTemplate, onSna
         : 'О чём пост?';
 
   return (
-    <div className="cp-form-block">
+    <div className="cp-form-block cp-post-form">
       <Group>
         <Div>
           <div
@@ -924,6 +924,9 @@ function PostFormBody({ draft, onBack, onSaved, onDeleted, onPickTemplate, onSna
                 {kindMeta.hint} · {netMeta.label}
                 {category ? ` · ${category}` : ''}
               </div>
+            </div>
+            <div className="cp-type-banner__net" aria-hidden="true">
+              <NetBadge network={network} size="lg" />
             </div>
           </div>
         </Div>
@@ -965,27 +968,21 @@ function PostFormBody({ draft, onBack, onSaved, onDeleted, onPickTemplate, onSna
               <div className="cp-net-pick">
                 {NETWORKS.map((n) => {
                   const active = network === n.value;
+                  const isIg = n.value === 'instagram';
                   return (
-                    <div
+                    <button
                       key={n.value}
-                      role="button"
-                      tabIndex={0}
-                      className={`cp-net-card cp-net-card--${n.value === 'instagram' ? 'ig' : 'vk'}${active ? ' cp-net-card--active' : ''}`}
+                      type="button"
+                      className={`cp-net-card cp-net-card--${isIg ? 'ig' : 'vk'}${active ? ' cp-net-card--active' : ''}`}
                       onClick={() => setNetwork(n.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          setNetwork(n.value);
-                        }
-                      }}
                     >
-                      <div
-                        className={`cp-net-card__icon cp-net-card__icon--${n.value === 'instagram' ? 'ig' : 'vk'}`}
+                      <span
+                        className={`cp-net-card__icon cp-net-card__icon--${isIg ? 'ig' : 'vk'}`}
                       >
                         <NetIcon network={n.value} />
-                      </div>
+                      </span>
                       <span className="cp-net-card__label">{n.label}</span>
-                    </div>
+                    </button>
                   );
                 })}
               </div>
@@ -994,12 +991,12 @@ function PostFormBody({ draft, onBack, onSaved, onDeleted, onPickTemplate, onSna
         )}
 
         <FormItem top="Тематика">
-          <div className="cp-tpl-chips cp-tpl-chips--scroll">
+          <div className="cp-tpl-filter" role="listbox" aria-label="Тематика">
             {TEMPLATE_CATEGORIES.map((c) => (
               <button
                 key={c}
                 type="button"
-                className={`cp-tpl-chip${category === c ? ' cp-tpl-chip--active' : ''}`}
+                className={`cp-tpl-filter__item${category === c ? ' cp-tpl-filter__item--active' : ''}`}
                 onClick={() => setCategory(c)}
               >
                 {c}

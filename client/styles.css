@@ -216,8 +216,8 @@ body {
 
 .cp-net {
   flex-shrink: 0;
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
   border-radius: 4px;
   display: inline-flex;
   align-items: center;
@@ -227,13 +227,23 @@ body {
 }
 
 .cp-net svg {
-  width: 9px;
-  height: 9px;
+  width: 10px;
+  height: 10px;
   display: block;
 }
 
 .cp-net--ig {
-  background: linear-gradient(135deg, #f58529, #dd2a7b 52%, #8134af);
+  background: radial-gradient(
+    circle farthest-corner at 28% 98%,
+    #ffdc80 0%,
+    #fcaf45 20%,
+    #f77737 35%,
+    #f56040 45%,
+    #fd1d1d 55%,
+    #e1306c 70%,
+    #c13584 80%,
+    #833ab4 95%
+  );
 }
 
 .cp-net--vk {
@@ -241,14 +251,14 @@ body {
 }
 
 .cp-net--lg {
-  width: 18px;
-  height: 18px;
-  border-radius: 5px;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
 }
 
 .cp-net--lg svg {
-  width: 11px;
-  height: 11px;
+  width: 13px;
+  height: 13px;
 }
 
 .cp-more {
@@ -687,8 +697,9 @@ body {
   flex-direction: column;
   align-items: flex-end;
   justify-content: center;
-  gap: 6px;
-  min-width: 48px;
+  gap: 8px;
+  min-width: 52px;
+  flex-shrink: 0;
 }
 
 .cp-day-row__time {
@@ -697,6 +708,12 @@ body {
   font-weight: 650;
   font-variant-numeric: tabular-nums;
   color: var(--vkui--color_text_accent);
+}
+
+.cp-day-row__tools {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .cp-type-banner {
@@ -731,6 +748,7 @@ body {
 
 .cp-type-banner__text {
   min-width: 0;
+  flex: 1;
 }
 
 .cp-type-banner__title {
@@ -748,6 +766,23 @@ body {
   margin-top: 3px;
 }
 
+.cp-type-banner__net {
+  flex-shrink: 0;
+  opacity: 0.95;
+}
+
+.cp-type-banner__net .cp-net {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+}
+
+.cp-type-banner__net .cp-net svg {
+  width: 16px;
+  height: 16px;
+}
+
 .cp-net-pick {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -756,14 +791,16 @@ body {
 
 .cp-net-card {
   border: 1.5px solid var(--vkui--color_field_border_alpha);
-  border-radius: var(--cp-radius);
-  padding: 14px 10px;
+  border-radius: 14px;
+  padding: 14px 12px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   cursor: pointer;
   background: var(--vkui--color_background_content);
+  color: var(--vkui--color_text_primary);
+  font: inherit;
   transition:
     border-color 0.2s ease,
     background 0.2s ease,
@@ -785,32 +822,36 @@ body {
 }
 
 .cp-net-card--active {
-  border-color: transparent;
-  color: #fff;
-  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.14);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
 }
 
 .cp-net-card--vk.cp-net-card--active {
-  background: #0077ff;
+  border-color: #0077ff;
+  background: color-mix(in srgb, #0077ff 8%, var(--vkui--color_background_content));
+  box-shadow: 0 0 0 3px color-mix(in srgb, #0077ff 18%, transparent);
 }
 
 .cp-net-card--ig.cp-net-card--active {
-  background: linear-gradient(135deg, #f58529, #dd2a7b 55%, #8134af);
+  border-color: #e1306c;
+  background: color-mix(in srgb, #e1306c 7%, var(--vkui--color_background_content));
+  box-shadow: 0 0 0 3px color-mix(in srgb, #e1306c 16%, transparent);
 }
 
 .cp-net-card__icon {
-  width: 32px;
-  height: 32px;
-  border-radius: 9px;
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #fff;
+  flex-shrink: 0;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12);
 }
 
 .cp-net-card__icon svg {
-  width: 16px;
-  height: 16px;
+  width: 22px;
+  height: 22px;
   display: block;
 }
 
@@ -819,17 +860,27 @@ body {
 }
 
 .cp-net-card__icon--ig {
-  background: linear-gradient(135deg, #f58529, #dd2a7b 55%, #8134af);
-}
-
-.cp-net-card--active .cp-net-card__icon {
-  background: rgba(255, 255, 255, 0.22);
+  background: radial-gradient(
+    circle farthest-corner at 28% 98%,
+    #ffdc80 0%,
+    #fcaf45 20%,
+    #f77737 35%,
+    #f56040 45%,
+    #fd1d1d 55%,
+    #e1306c 70%,
+    #c13584 80%,
+    #833ab4 95%
+  );
 }
 
 .cp-net-card__label {
   font-size: 13px;
   line-height: 1;
-  font-weight: 600;
+  font-weight: 650;
+}
+
+.cp-post-form .cp-tpl-filter {
+  padding-top: 2px;
 }
 
 .cp-form-block {
