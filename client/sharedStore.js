@@ -117,19 +117,6 @@ function hasUserData(s) {
   );
 }
 
-function mergeById(primary, secondary) {
-  const map = new Map();
-  for (const item of secondary || []) {
-    if (item == null || item.id == null) continue;
-    map.set(Number(item.id), item);
-  }
-  for (const item of primary || []) {
-    if (item == null || item.id == null) continue;
-    map.set(Number(item.id), item);
-  }
-  return [...map.values()];
-}
-
 function maxSeq(list, fallback = 1) {
   let n = fallback;
   for (const item of list || []) {
@@ -139,9 +126,19 @@ function maxSeq(list, fallback = 1) {
   return n;
 }
 
+/** Cloud/demo shell with no real user content. */
+function isEmptyShell(s) {
+  return (
+    !(s?.posts?.length) &&
+    !(s?.history?.length) &&
+    isSeedOnlyTemplates(s?.templates)
+  );
+}
+
 /**
- * Merge cloud + device. Never let an empty/seed cloud wipe real local data
- * (posts, history, or custom templates).
+ * Prefer the newer snapshot so deletes stick.
+ * Only rescue when newer is an empty/seed shell, or seed templates
+ * would wipe custom templates while posts/history remain.
  */
 function mergeStores(remote, local) {
   if (!local) return remote;
@@ -152,70 +149,35 @@ function mergeStores(remote, local) {
   const newer = remoteNewer ? remote : local;
   const older = remoteNewer ? local : remote;
 
-  let templates;
-  if (hasCustomTemplates(older) && isSeedOnlyTemplates(newer.templates)) {
-    templates = older.templates;
-  } else if (hasCustomTemplates(newer) && isSeedOnlyTemplates(older.templates)) {
-    templates = newer.templates;
-  } else if (hasCustomTemplates(older) && hasCustomTemplates(newer)) {
-    templates = mergeById(newer.templates, older.templates);
-  } else {
-    templates = (newer.templates?.length ? newer.templates : older.templates) || [];
+  if (isEmptyShell(newer) && hasUserData(older)) {
+    return normalizeStore({
+      ...older,
+      updated_at: new Date().toISOString(),
+    });
   }
 
-  let posts;
-  if (!(newer.posts?.length) && older.posts?.length) {
-    posts = older.posts;
-  } else if (newer.posts?.length && older.posts?.length) {
-    posts = mergeById(newer.posts, older.posts);
-  } else {
-    posts = (newer.posts?.length ? newer.posts : older.posts) || [];
+  if (
+    isSeedOnlyTemplates(newer.templates) &&
+    hasCustomTemplates(older)
+  ) {
+    return normalizeStore({
+      ...newer,
+      templates: older.templates,
+      seq: {
+        posts: Number(newer.seq?.posts) || 1,
+        history: Number(newer.seq?.history) || 1,
+        templates: Math.max(
+          Number(newer.seq?.templates) || 1,
+          Number(older.seq?.templates) || 1,
+          maxSeq(older.templates)
+        ),
+      },
+      updated_at: new Date().toISOString(),
+    });
   }
 
-  let history;
-  if (!(newer.history?.length) && older.history?.length) {
-    history = older.history;
-  } else if (newer.history?.length && older.history?.length) {
-    history = mergeById(newer.history, older.history);
-  } else {
-    history = (newer.history?.length ? newer.history : older.history) || [];
-  }
-
-  const merged = {
-    posts,
-    templates,
-    history,
-    seq: {
-      posts: Math.max(
-        Number(newer.seq?.posts) || 1,
-        Number(older.seq?.posts) || 1,
-        maxSeq(posts)
-      ),
-      templates: Math.max(
-        Number(newer.seq?.templates) || 1,
-        Number(older.seq?.templates) || 1,
-        maxSeq(templates)
-      ),
-      history: Math.max(
-        Number(newer.seq?.history) || 1,
-        Number(older.seq?.history) || 1,
-        maxSeq(history)
-      ),
-    },
-    updated_at: newer.updated_at,
-  };
-
-  const rescued =
-    (hasCustomTemplates({ templates }) &&
-      isSeedOnlyTemplates(newer.templates)) ||
-    (posts.length || 0) > (newer.posts?.length || 0) ||
-    (history.length || 0) > (newer.history?.length || 0);
-
-  if (rescued) {
-    merged.updated_at = new Date().toISOString();
-  }
-
-  return normalizeStore(merged);
+  // Newer wins as-is — do not union-merge posts (that resurrected deletes)
+  return newer;
 }
 
 function readLocal() {
