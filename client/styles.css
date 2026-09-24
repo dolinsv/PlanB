@@ -5,10 +5,11 @@
   --cp-day-fs: 13px;
   --cp-radius: 12px;
   --cp-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  --cp-font: 'Manrope', var(--vkui--font_family_base, system-ui, -apple-system, 'Segoe UI', sans-serif);
-  --cp-display: 'Unbounded', 'Manrope', system-ui, sans-serif;
+  --cp-font: 'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --cp-accent: #0e7490;
   --cp-accent-soft: #ecfeff;
+  --vkui--font_family_base: var(--cp-font);
+  --vkui--font_family_accent: var(--cp-font);
 }
 
 html,
@@ -24,6 +25,16 @@ body {
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
+}
+
+#root,
+.vkuiAppRoot,
+.vkuiPanelHeader,
+.vkuiButton,
+.vkuiTypography,
+.vkuiFormItem,
+.vkuiPlaceholder {
+  font-family: var(--cp-font) !important;
 }
 
 @keyframes cp-fade-up {
@@ -1647,10 +1658,10 @@ body {
 }
 
 .cp-main-header .vkuiPanelHeader__content {
-  font-family: var(--cp-display);
-  font-weight: 600;
+  font-family: var(--cp-font);
+  font-weight: 700;
   font-size: 15px;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.02em;
   color: var(--cp-accent);
 }
 
@@ -1702,11 +1713,11 @@ body {
 }
 
 .cp-month-hero__month {
-  font-family: var(--cp-display);
-  font-size: clamp(26px, 7vw, 34px);
-  font-weight: 700;
+  font-family: var(--cp-font);
+  font-size: clamp(28px, 7.5vw, 36px);
+  font-weight: 800;
   line-height: 1.05;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
   color: #0f3f4a;
   text-transform: capitalize;
 }
@@ -1744,10 +1755,10 @@ body {
 }
 
 .cp-next__head {
-  font-family: var(--cp-display);
-  font-size: 15px;
-  font-weight: 600;
-  letter-spacing: 0.01em;
+  font-family: var(--cp-font);
+  font-size: 16px;
+  font-weight: 750;
+  letter-spacing: -0.01em;
   color: var(--vkui--color_text_primary);
   margin-bottom: 8px;
 }
