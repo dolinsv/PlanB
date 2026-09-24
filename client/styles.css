@@ -498,50 +498,118 @@ body {
   display: none;
 }
 
+.cp-templates__filters {
+  padding-top: 0 !important;
+  padding-bottom: 4px !important;
+}
+
 .cp-tpl-filter {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  padding: 2px 0 8px;
+  gap: 5px;
+  padding: 0;
+  justify-content: flex-start;
 }
 
 .cp-tpl-filter__item {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 7px 11px;
-  border-radius: 10px;
-  font-size: 12px;
-  font-weight: 650;
-  line-height: 1;
-  border: 1.5px solid var(--vkui--color_field_border_alpha);
-  background: var(--vkui--color_background_content);
-  color: var(--vkui--color_text_primary);
+  padding: 5px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: 0.01em;
+  border: 1px solid var(--vkui--color_field_border_alpha);
+  background: var(--vkui--color_background_secondary);
+  color: var(--vkui--color_text_secondary);
   cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    transform 0.12s ease;
   white-space: nowrap;
-  min-height: 32px;
+  min-height: 26px;
+  box-sizing: border-box;
+}
+
+@media (hover: hover) {
+  .cp-tpl-filter__item:hover {
+    color: var(--vkui--color_text_primary);
+    border-color: color-mix(in srgb, var(--vkui--color_stroke_accent) 35%, var(--vkui--color_field_border_alpha));
+  }
+}
+
+.cp-tpl-filter__item:active {
+  transform: scale(0.97);
 }
 
 .cp-tpl-filter__item--active {
   border-color: transparent;
   background: var(--vkui--color_background_accent);
   color: #fff;
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--vkui--color_background_accent) 35%, transparent);
 }
 
-.cp-add-plus {
+.cp-add-tpl {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 16px;
+  margin: 0;
+  border: 1.5px dashed color-mix(in srgb, var(--vkui--color_stroke_accent) 45%, var(--vkui--color_field_border_alpha));
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--vkui--color_background_accent) 6%, var(--vkui--color_background_content));
+  color: var(--vkui--color_text_accent);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 650;
+  line-height: 1;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.15s ease;
+}
+
+@media (hover: hover) {
+  .cp-add-tpl:hover {
+    background: color-mix(in srgb, var(--vkui--color_background_accent) 11%, var(--vkui--color_background_content));
+    border-color: var(--vkui--color_stroke_accent);
+  }
+}
+
+.cp-add-tpl:active {
+  transform: scale(0.985);
+}
+
+.cp-add-tpl__ico {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
-  margin-right: 4px;
-  border-radius: 6px;
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
   background: var(--vkui--color_background_accent);
   color: #fff;
-  font-size: 16px;
-  font-weight: 700;
-  line-height: 1;
+}
+
+.cp-add-tpl__ico svg {
+  width: 14px;
+  height: 14px;
+  display: block;
+}
+
+.cp-add-tpl__label {
+  display: inline-block;
+  line-height: 1.2;
 }
 
 .cp-day-row:nth-child(1) { animation-delay: 0.02s; }
@@ -1025,14 +1093,18 @@ body {
   }
 
   .cp-tpl-filter {
-    gap: 6px;
+    gap: 5px;
   }
 
   .cp-tpl-filter__item {
-    padding: 8px 12px;
-    font-size: 13px;
-    min-height: 36px;
-    border-radius: 11px;
+    padding: 5px 9px;
+    font-size: 11px;
+    min-height: 28px;
+  }
+
+  .cp-add-tpl {
+    min-height: 46px;
+    font-size: 14px;
   }
 
   .cp-tpl-chips.cp-tpl-chips--scroll {
@@ -1049,15 +1121,16 @@ body {
   }
 
   .cp-tpl-chip {
-    padding: 8px 14px;
-    font-size: 13px;
-    min-height: 36px;
+    padding: 6px 11px;
+    font-size: 12px;
+    min-height: 30px;
   }
 
   .cp-tpl-card {
-    margin: 0 10px 10px;
+    margin: 0 10px 8px;
     width: calc(100% - 20px);
     padding: 12px 10px 12px 12px;
+    border-radius: 12px;
   }
 
   .cp-icon-btn {

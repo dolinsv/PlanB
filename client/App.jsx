@@ -1248,21 +1248,29 @@ function TemplatesList({
   }, [templates, category]);
 
   return (
-    <div className="cp-form-block">
+    <div className="cp-form-block cp-templates">
       {!selectMode && (
         <Div>
-          <Button
-            size="l"
-            stretched
-            mode="secondary"
+          <button
+            type="button"
+            className="cp-add-tpl"
             onClick={() => onAdd?.()}
-            before={<span className="cp-add-plus" aria-hidden="true">+</span>}
           >
-            Добавить заготовку
-          </Button>
+            <span className="cp-add-tpl__ico" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M12 5v14M5 12h14"
+                  stroke="currentColor"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </span>
+            <span className="cp-add-tpl__label">Добавить заготовку</span>
+          </button>
         </Div>
       )}
-      <Div style={{ paddingTop: selectMode ? undefined : 0, paddingBottom: 0 }}>
+      <Div className="cp-templates__filters">
         <div className="cp-tpl-filter" role="tablist" aria-label="Тематика">
           {cats.map((c) => (
             <button
