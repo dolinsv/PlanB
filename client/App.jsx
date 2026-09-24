@@ -1354,9 +1354,6 @@ function TemplatesList({
               </svg>
             </span>
             <span className="cp-cat-manage-link__text">Управление тематиками</span>
-            <span className="cp-cat-manage-link__arrow" aria-hidden="true">
-              →
-            </span>
           </button>
         )}
       </Div>

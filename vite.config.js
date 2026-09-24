@@ -7,6 +7,8 @@ const REPO_NAME = 'PlanB';
 const isPages =
   process.env.VITE_STATIC === 'true' || process.env.GH_PAGES === 'true';
 
+const APP_BUILD = process.env.VITE_APP_BUILD || String(Date.now());
+
 export default defineConfig({
   root: 'client',
   base: isPages ? `/${REPO_NAME}/` : '/',
@@ -15,6 +17,7 @@ export default defineConfig({
     'import.meta.env.VITE_STATIC': JSON.stringify(
       isPages ? 'true' : process.env.VITE_STATIC || ''
     ),
+    'import.meta.env.VITE_APP_BUILD': JSON.stringify(APP_BUILD),
   },
   build: {
     outDir: '../dist',

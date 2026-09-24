@@ -565,18 +565,6 @@ body {
   display: block;
 }
 
-.cp-cat-manage-link__text {
-  text-decoration: underline;
-  text-underline-offset: 2px;
-  text-decoration-thickness: 1px;
-}
-
-.cp-cat-manage-link__arrow {
-  font-size: 13px;
-  line-height: 1;
-  opacity: 0.85;
-}
-
 .cp-cat-add {
   display: flex;
   gap: 8px;
