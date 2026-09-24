@@ -98,14 +98,46 @@ function normText(t) {
 }
 
 /** planned = in calendar, placed = already published */
-function templateUsageStatus(text, posts, history) {
+function templatePlanInfo(text, posts, history) {
   const key = normText(text);
-  if (!key) return null;
-  if ((history || []).some((h) => normText(h.text) === key)) return 'placed';
+  if (!key) return { status: null };
+  const hist = (history || []).filter((h) => normText(h.text) === key);
   const matching = (posts || []).filter((p) => normText(p.text) === key);
-  if (matching.some((p) => p.reminded === 1 || p.placed === 1)) return 'placed';
-  if (matching.length) return 'planned';
-  return null;
+  const placedPosts = matching.filter(
+    (p) => p.reminded === 1 || p.placed === 1
+  );
+  if (hist.length || placedPosts.length) {
+    const at =
+      hist[0]?.placed_at ||
+      placedPosts.sort((a, b) =>
+        String(b.publish_at).localeCompare(String(a.publish_at))
+      )[0]?.publish_at ||
+      null;
+    return { status: 'placed', at, count: hist.length || placedPosts.length };
+  }
+  if (matching.length) {
+    const sorted = [...matching].sort((a, b) =>
+      String(a.publish_at).localeCompare(String(b.publish_at))
+    );
+    return {
+      status: 'planned',
+      at: sorted[0].publish_at,
+      count: matching.length,
+    };
+  }
+  return { status: null };
+}
+
+function templateUsageStatus(text, posts, history) {
+  return templatePlanInfo(text, posts, history).status;
+}
+
+function formatPlanDay(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (!Number.isFinite(d.getTime())) return '';
+  const mon = MONTHS[d.getMonth()].slice(0, 3).toLowerCase();
+  return `${d.getDate()} ${mon}`;
 }
 
 const KIND_MAP = Object.fromEntries(KINDS.map((k) => [k.value, k]));
@@ -1926,22 +1958,44 @@ function TemplatesList({
           </Placeholder>
         ) : (
           filtered.map((t) => {
-            const status = templateUsageStatus(t.text, posts, history);
-            const statusLabel =
-              status === 'placed'
-                ? 'Размещена'
-                : status === 'planned'
-                  ? 'В плане'
-                  : null;
+            const info = templatePlanInfo(t.text, posts, history);
+            const status = info.status;
+            const dayStr = formatPlanDay(info.at);
+            const locked =
+              selectMode && (status === 'planned' || status === 'placed');
+            let statusLabel = null;
+            if (status === 'placed') {
+              statusLabel = dayStr
+                ? `Размещена · ${dayStr}`
+                : 'Размещена';
+            } else if (status === 'planned') {
+              statusLabel = dayStr
+                ? info.count > 1
+                  ? `В плане · ${dayStr} (+${info.count - 1})`
+                  : `В плане · ${dayStr}`
+                : 'В плане';
+            }
             return (
               <div
                 key={t.id}
-                className={`cp-tpl-card${status === 'planned' ? ' cp-tpl-card--planned' : ''}${status === 'placed' ? ' cp-tpl-card--placed' : ''}`}
+                className={`cp-tpl-card${status === 'planned' ? ' cp-tpl-card--planned' : ''}${status === 'placed' ? ' cp-tpl-card--placed' : ''}${locked ? ' cp-tpl-card--locked' : ''}`}
               >
                 <button
                   type="button"
                   className="cp-tpl-card__main"
-                  onClick={() => (selectMode ? onSelect(t) : onEdit(t))}
+                  disabled={locked}
+                  title={
+                    locked
+                      ? status === 'planned'
+                        ? `Уже запланирована на ${dayStr || 'другой день'}`
+                        : `Уже размещена${dayStr ? ` · ${dayStr}` : ''}`
+                      : undefined
+                  }
+                  onClick={() => {
+                    if (locked) return;
+                    if (selectMode) onSelect(t);
+                    else onEdit(t);
+                  }}
                 >
                   <div className="cp-tpl-card__top">
                     <div className="cp-tpl-card__cat">{t.category}</div>
@@ -1958,6 +2012,13 @@ function TemplatesList({
                   >
                     {t.text}
                   </div>
+                  {locked && (
+                    <div className="cp-tpl-card__lock">
+                      {status === 'planned'
+                        ? `Нельзя выбрать — уже в плане на ${dayStr || 'этот день'}`
+                        : `Нельзя выбрать — уже размещена${dayStr ? ` (${dayStr})` : ''}`}
+                    </div>
+                  )}
                 </button>
                 {status === 'placed' && !selectMode && (
                   <button
@@ -2609,6 +2670,8 @@ export default function App() {
   };
 
   const pickTemplate = (t) => {
+    const info = templatePlanInfo(t.text, planPosts, history);
+    if (info.status === 'planned' || info.status === 'placed') return;
     setDraft((d) => ({
       ...(d || {}),
       presetText: t.text,
