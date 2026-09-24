@@ -218,7 +218,7 @@ body {
   flex-shrink: 0;
   width: 16px;
   height: 16px;
-  border-radius: 4px;
+  border-radius: 3px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -230,8 +230,8 @@ body {
 }
 
 .cp-net svg {
-  width: 10px;
-  height: 10px;
+  width: 11px;
+  height: 11px;
   display: block;
   flex-shrink: 0;
 }
@@ -255,19 +255,14 @@ body {
 }
 
 .cp-net--lg {
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
+  width: 26px;
+  height: 26px;
+  border-radius: 5px;
 }
 
 .cp-net--lg svg {
   width: 15px;
   height: 15px;
-}
-
-.cp-net--vk.cp-net--lg svg {
-  width: 16px;
-  height: 16px;
 }
 
 .cp-more {
@@ -733,17 +728,12 @@ body {
 .cp-day-row__tools .cp-net {
   width: 36px;
   height: 36px;
-  border-radius: 10px;
+  border-radius: 6px;
 }
 
 .cp-day-row__tools .cp-net svg {
-  width: 18px;
-  height: 18px;
-}
-
-.cp-day-row__tools .cp-net--vk svg {
-  width: 19px;
-  height: 19px;
+  width: 20px;
+  height: 20px;
 }
 
 .cp-type-banner {
@@ -804,16 +794,11 @@ body {
 .cp-type-banner__net .cp-net {
   width: 28px;
   height: 28px;
-  border-radius: 8px;
+  border-radius: 5px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
 }
 
 .cp-type-banner__net .cp-net svg {
-  width: 15px;
-  height: 15px;
-}
-
-.cp-type-banner__net .cp-net--vk svg {
   width: 16px;
   height: 16px;
 }
@@ -875,7 +860,7 @@ body {
 .cp-net-card__icon {
   width: 40px;
   height: 40px;
-  border-radius: 11px;
+  border-radius: 7px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -890,11 +875,6 @@ body {
   width: 22px;
   height: 22px;
   display: block;
-}
-
-.cp-net-card__icon--vk svg {
-  width: 23px;
-  height: 23px;
 }
 
 .cp-net-card__icon--vk {
@@ -1239,17 +1219,12 @@ body {
   .cp-day-row__tools .cp-net {
     width: 40px;
     height: 40px;
-    border-radius: 12px;
+    border-radius: 7px;
   }
 
   .cp-day-row__tools .cp-net svg {
-    width: 20px;
-    height: 20px;
-  }
-
-  .cp-day-row__tools .cp-net--vk svg {
-    width: 21px;
-    height: 21px;
+    width: 22px;
+    height: 22px;
   }
 
   .cp-day-row {
