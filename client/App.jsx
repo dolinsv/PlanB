@@ -672,7 +672,7 @@ function DayPanelBody({ year, month, day, posts, onAdd, onEdit, onMove, onDelete
                       {formatTime(p.publish_at)}
                     </span>
                     <div className="cp-day-row__tools">
-                      <NetBadge network={p.network || 'vk'} size="lg" />
+                      <NetBadge network={p.network || 'vk'} />
                       <button
                         type="button"
                         className="cp-icon-btn"
