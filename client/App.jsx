@@ -1297,6 +1297,57 @@ function PostFormBody({
           </Div>
         )}
 
+        <FormItem top="Тип публикации">
+          <div className="cp-kind-pick" role="tablist" aria-label="Тип публикации">
+            {KINDS.map((k) => (
+              <button
+                key={k.value}
+                type="button"
+                role="tab"
+                aria-selected={kind === k.value}
+                className={`cp-kind-pick__item${kind === k.value ? ' cp-kind-pick__item--active' : ''}`}
+                style={
+                  kind === k.value
+                    ? { '--cp-kind-color': k.color }
+                    : undefined
+                }
+                onClick={() => setKind(k.value)}
+              >
+                <span
+                  className="cp-kind-pick__dot"
+                  style={{ background: k.color }}
+                  aria-hidden="true"
+                />
+                {k.label}
+              </button>
+            ))}
+          </div>
+        </FormItem>
+
+        <FormItem top="Соцсеть">
+          <div className="cp-net-pick">
+            {NETWORKS.map((n) => {
+              const active = network === n.value;
+              const isIg = n.value === 'instagram';
+              return (
+                <button
+                  key={n.value}
+                  type="button"
+                  className={`cp-net-card cp-net-card--${isIg ? 'ig' : 'vk'}${active ? ' cp-net-card--active' : ''}`}
+                  onClick={() => setNetwork(n.value)}
+                >
+                  <span
+                    className={`cp-net-card__icon cp-net-card__icon--${isIg ? 'ig' : 'vk'}`}
+                  >
+                    <NetIcon network={n.value} />
+                  </span>
+                  <span className="cp-net-card__label">{n.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </FormItem>
+
         {!isEdit && contentMode == null && (
           <Div className="cp-post-source">
             <button
@@ -1405,132 +1456,71 @@ function PostFormBody({
           </>
         )}
 
-        {(isEdit || showContentEditor) && (
-          <>
-            {!isEdit && (
-              <>
-                <FormItem top="Тип публикации">
-                  <div className="cp-kind-pick" role="tablist" aria-label="Тип публикации">
-                    {KINDS.map((k) => (
-                      <button
-                        key={k.value}
-                        type="button"
-                        role="tab"
-                        aria-selected={kind === k.value}
-                        className={`cp-kind-pick__item${kind === k.value ? ' cp-kind-pick__item--active' : ''}`}
-                        style={
-                          kind === k.value
-                            ? { '--cp-kind-color': k.color }
-                            : undefined
-                        }
-                        onClick={() => setKind(k.value)}
-                      >
-                        <span
-                          className="cp-kind-pick__dot"
-                          style={{ background: k.color }}
-                          aria-hidden="true"
-                        />
-                        {k.label}
-                      </button>
-                    ))}
-                  </div>
-                </FormItem>
-
-                <FormItem top="Соцсеть">
-                  <div className="cp-net-pick">
-                    {NETWORKS.map((n) => {
-                      const active = network === n.value;
-                      const isIg = n.value === 'instagram';
-                      return (
-                        <button
-                          key={n.value}
-                          type="button"
-                          className={`cp-net-card cp-net-card--${isIg ? 'ig' : 'vk'}${active ? ' cp-net-card--active' : ''}`}
-                          onClick={() => setNetwork(n.value)}
-                        >
-                          <span
-                            className={`cp-net-card__icon cp-net-card__icon--${isIg ? 'ig' : 'vk'}`}
-                          >
-                            <NetIcon network={n.value} />
-                          </span>
-                          <span className="cp-net-card__label">{n.label}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </FormItem>
-              </>
-            )}
-
-            <FormItem top="Когда публиковать">
-              <div className="cp-when">
-                <div className="cp-when__field">
-                  <div className="cp-when__label">Дата</div>
-                  <Input
-                    type="date"
-                    value={datePart}
-                    onChange={(e) => setDatePart(e.target.value)}
-                  />
-                </div>
-                <div className="cp-when__field">
-                  <div className="cp-when__label">Время</div>
-                  <Input
-                    type="time"
-                    value={timePart}
-                    step={300}
-                    onChange={(e) => setTimePart(e.target.value)}
-                  />
-                </div>
-              </div>
-            </FormItem>
-          </>
-        )}
+        <FormItem top="Когда публиковать">
+          <div className="cp-when">
+            <div className="cp-when__field">
+              <div className="cp-when__label">Дата</div>
+              <Input
+                type="date"
+                value={datePart}
+                onChange={(e) => setDatePart(e.target.value)}
+              />
+            </div>
+            <div className="cp-when__field">
+              <div className="cp-when__label">Время</div>
+              <Input
+                type="time"
+                value={timePart}
+                step={300}
+                onChange={(e) => setTimePart(e.target.value)}
+              />
+            </div>
+          </div>
+        </FormItem>
       </Group>
 
-      {showContentEditor && (
-        <Group>
+      <Group>
+        <Div>
+          <Button
+            size="l"
+            stretched
+            mode="secondary"
+            disabled={copyBusy || !text.trim()}
+            onClick={copyText}
+            before={
+              <span className="cp-btn-ico" aria-hidden="true">
+                <IconCopy />
+              </span>
+            }
+          >
+            Скопировать текст для соцсети
+          </Button>
+        </Div>
+        <Div>
+          <Button
+            size="l"
+            stretched
+            disabled={busy || !text.trim() || !datePart || !timePart}
+            onClick={save}
+          >
+            Сохранить {kindMeta.label.toLowerCase()}
+          </Button>
+        </Div>
+        {isEdit && (
           <Div>
             <Button
               size="l"
               stretched
               mode="secondary"
-              disabled={copyBusy || !text.trim()}
-              onClick={copyText}
-              before={
-                <span className="cp-btn-ico" aria-hidden="true">
-                  <IconCopy />
-                </span>
-              }
+              appearance="negative"
+              disabled={busy}
+              onClick={remove}
             >
-              Скопировать текст для соцсети
+              Удалить
             </Button>
           </Div>
-          <Div>
-            <Button
-              size="l"
-              stretched
-              disabled={busy || !text.trim() || !datePart || !timePart}
-              onClick={save}
-            >
-              Сохранить {kindMeta.label.toLowerCase()}
-            </Button>
-          </Div>
-          {isEdit && (
-            <Div>
-              <Button
-                size="l"
-                stretched
-                mode="secondary"
-                appearance="negative"
-                disabled={busy}
-                onClick={remove}
-              >
-                Удалить
-              </Button>
-            </Div>
-          )}
-        </Group>
-      )}
+        )}
+      </Group>
     </div>
   );
 }
