@@ -233,6 +233,40 @@ let bootPromise = null;
 let lastWrittenAt = '';
 let writeChain = Promise.resolve();
 const listeners = new Set();
+const syncListeners = new Set();
+
+let syncState = {
+  status: isRemoteSyncEnabled() ? 'idle' : 'local',
+  online: typeof navigator !== 'undefined' ? navigator.onLine : true,
+};
+
+function emitSync() {
+  for (const fn of syncListeners) {
+    try {
+      fn(syncState);
+    } catch (e) {
+      console.warn(e);
+    }
+  }
+}
+
+function setSyncStatus(status) {
+  if (syncState.status === status) return;
+  syncState = { ...syncState, status };
+  emitSync();
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('online', () => {
+    syncState = { ...syncState, online: true };
+    if (syncState.status === 'offline') setSyncStatus('idle');
+    else emitSync();
+  });
+  window.addEventListener('offline', () => {
+    syncState = { ...syncState, online: false, status: 'offline' };
+    emitSync();
+  });
+}
 
 function emit() {
   for (const fn of listeners) {
@@ -246,11 +280,22 @@ function emit() {
 
 function queueRemoteWrite(store) {
   if (!isRemoteSyncEnabled() || !dbRef) return Promise.resolve();
+  if (typeof navigator !== 'undefined' && !navigator.onLine) {
+    setSyncStatus('offline');
+    return Promise.resolve();
+  }
   const payload = toRemotePayload(store);
   lastWrittenAt = payload.updated_at;
+  setSyncStatus('syncing');
   writeChain = writeChain
     .then(() => set(dbRef, payload))
-    .catch((e) => console.warn('Firebase write failed', e));
+    .then(() => {
+      setSyncStatus('saved');
+    })
+    .catch((e) => {
+      console.warn('Firebase write failed', e);
+      setSyncStatus('error');
+    });
   return writeChain;
 }
 
@@ -339,6 +384,9 @@ export async function ensureStore() {
         const snap = await get(dbRef);
         if (snap.exists()) {
           applyRemote(snap.val(), { allowPushLocal: true });
+          if (typeof navigator === 'undefined' || navigator.onLine) {
+            setSyncStatus('saved');
+          }
           return cache;
         }
         cache = local || emptyStore();
@@ -348,6 +396,11 @@ export async function ensureStore() {
         return cache;
       } catch (e) {
         console.warn('Firebase read failed, using localStorage', e);
+        setSyncStatus(
+          typeof navigator !== 'undefined' && !navigator.onLine
+            ? 'offline'
+            : 'error'
+        );
       }
     }
 
@@ -400,4 +453,14 @@ export function subscribeStore(fn) {
 
 export function syncMode() {
   return isRemoteSyncEnabled() ? 'remote' : 'local';
+}
+
+export function getSyncStatus() {
+  return syncState;
+}
+
+export function subscribeSyncStatus(fn) {
+  syncListeners.add(fn);
+  fn(syncState);
+  return () => syncListeners.delete(fn);
 }

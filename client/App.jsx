@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import bridge from '@vkontakte/vk-bridge';
 import {
   Panel,
@@ -24,7 +24,16 @@ import {
 } from '@vkontakte/vkui';
 import './styles.css';
 import { api } from './api.js';
-import { DEFAULT_CATEGORIES, subscribeStore } from './sharedStore.js';
+import {
+  DEFAULT_CATEGORIES,
+  subscribeStore,
+  subscribeSyncStatus,
+} from './sharedStore.js';
+import {
+  notificationSupport,
+  requestNotificationPermission,
+  startReminderLoop,
+} from './reminders.js';
 
 const WEEKDAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 const MONTHS = [
@@ -346,6 +355,317 @@ function IconTrash() {
         strokeLinejoin="round"
       />
     </svg>
+  );
+}
+
+function startOfWeek(d) {
+  const x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const dow = (x.getDay() + 6) % 7; // Mon=0
+  x.setDate(x.getDate() - dow);
+  return x;
+}
+
+function addDaysDate(d, n) {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+}
+
+function sameDay(a, b) {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+}
+
+function dayLabelShort(d) {
+  const names = ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'];
+  return `${names[d.getDay()]}, ${d.getDate()} ${MONTHS[d.getMonth()].slice(0, 3).toLowerCase()}`;
+}
+
+function ConfirmDialog({ title, message, confirmLabel = 'Удалить', onConfirm, onCancel }) {
+  return (
+    <div className="cp-confirm" role="alertdialog" aria-modal="true">
+      <button
+        type="button"
+        className="cp-confirm__backdrop"
+        aria-label="Закрыть"
+        onClick={onCancel}
+      />
+      <div className="cp-confirm__card">
+        <div className="cp-confirm__title">{title}</div>
+        {message ? <div className="cp-confirm__msg">{message}</div> : null}
+        <div className="cp-confirm__actions">
+          <Button size="m" mode="secondary" stretched onClick={onCancel}>
+            Отмена
+          </Button>
+          <Button
+            size="m"
+            mode="primary"
+            appearance="negative"
+            stretched
+            onClick={onConfirm}
+          >
+            {confirmLabel}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SyncBadge() {
+  const [sync, setSync] = useState(() => ({
+    status: 'idle',
+    online: typeof navigator !== 'undefined' ? navigator.onLine : true,
+  }));
+
+  useEffect(() => subscribeSyncStatus(setSync), []);
+
+  let label = 'Локально';
+  let mod = 'local';
+  if (!sync.online || sync.status === 'offline') {
+    label = 'Офлайн';
+    mod = 'offline';
+  } else if (sync.status === 'syncing') {
+    label = 'Синхронизация…';
+    mod = 'syncing';
+  } else if (sync.status === 'saved' || sync.status === 'idle') {
+    label = 'Сохранено';
+    mod = 'saved';
+  } else if (sync.status === 'error') {
+    label = 'Ошибка синка';
+    mod = 'error';
+  } else if (sync.status === 'local') {
+    label = 'Локально';
+    mod = 'local';
+  }
+
+  return (
+    <span className={`cp-sync cp-sync--${mod}`} title={label}>
+      <span className="cp-sync__dot" aria-hidden="true" />
+      {label}
+    </span>
+  );
+}
+
+function UpcomingStrip({ posts, onOpenPost, onOpenWeek }) {
+  const { todayList, tomorrowList } = useMemo(() => {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const tomorrow = addDaysDate(today, 1);
+    const list = (posts || [])
+      .filter((p) => p.reminded !== 1 && p.placed !== 1)
+      .sort((a, b) => String(a.publish_at).localeCompare(String(b.publish_at)));
+    const todayList = list.filter((p) => sameDay(new Date(p.publish_at), today));
+    const tomorrowList = list.filter((p) =>
+      sameDay(new Date(p.publish_at), tomorrow)
+    );
+    return { todayList, tomorrowList };
+  }, [posts]);
+
+  const total = todayList.length + tomorrowList.length;
+
+  return (
+    <Group>
+      <Div className="cp-upcoming">
+        <div className="cp-upcoming__head">
+          <div className="cp-upcoming__title">Ближайшие</div>
+          <button type="button" className="cp-upcoming__week" onClick={onOpenWeek}>
+            Эта неделя →
+          </button>
+        </div>
+        {total === 0 ? (
+          <div className="cp-upcoming__empty">На сегодня и завтра слотов нет</div>
+        ) : (
+          <div className="cp-upcoming__cols">
+            <UpcomingDay
+              label="Сегодня"
+              count={todayList.length}
+              items={todayList}
+              onOpenPost={onOpenPost}
+            />
+            <UpcomingDay
+              label="Завтра"
+              count={tomorrowList.length}
+              items={tomorrowList}
+              onOpenPost={onOpenPost}
+            />
+          </div>
+        )}
+      </Div>
+    </Group>
+  );
+}
+
+function UpcomingDay({ label, count, items, onOpenPost }) {
+  return (
+    <div className="cp-upcoming__day">
+      <div className="cp-upcoming__day-head">
+        <span>{label}</span>
+        {count > 0 && <span className="cp-upcoming__badge">{count}</span>}
+      </div>
+      {items.length === 0 ? (
+        <div className="cp-upcoming__none">—</div>
+      ) : (
+        items.slice(0, 4).map((p) => {
+          const meta = KIND_MAP[p.kind] || KIND_MAP.post;
+          return (
+            <button
+              key={p.id}
+              type="button"
+              className="cp-upcoming__item"
+              onClick={() => onOpenPost?.(p)}
+            >
+              <span
+                className="cp-upcoming__dot"
+                style={{ background: pillColor(p) }}
+              />
+              <span className="cp-upcoming__time">{formatTime(p.publish_at)}</span>
+              <span className="cp-upcoming__kind">{meta.short}</span>
+              <NetBadge network={p.network} size="sm" />
+              <span className="cp-upcoming__text">
+                {(p.text || '').trim() || '(без текста)'}
+              </span>
+            </button>
+          );
+        })
+      )}
+      {items.length > 4 && (
+        <div className="cp-upcoming__more">ещё {items.length - 4}</div>
+      )}
+    </div>
+  );
+}
+
+function WeekPanelBody({ weekStart, posts, onOpenPost, onShiftWeek }) {
+  const days = useMemo(() => {
+    const out = [];
+    for (let i = 0; i < 7; i++) {
+      const d = addDaysDate(weekStart, i);
+      const dayPosts = (posts || [])
+        .filter((p) => sameDay(new Date(p.publish_at), d))
+        .sort((a, b) => String(a.publish_at).localeCompare(String(b.publish_at)));
+      out.push({ date: d, posts: dayPosts });
+    }
+    return out;
+  }, [weekStart, posts]);
+
+  const total = days.reduce((n, d) => n + d.posts.length, 0);
+  const end = addDaysDate(weekStart, 6);
+  const rangeLabel = `${weekStart.getDate()}–${end.getDate()} ${MONTHS[end.getMonth()]}`;
+
+  return (
+    <div className="cp-form-block">
+      <Group>
+        <Div className="cp-week-nav">
+          <button
+            type="button"
+            className="cp-week-nav__btn"
+            onClick={() => onShiftWeek?.(-1)}
+            aria-label="Предыдущая неделя"
+          >
+            ‹
+          </button>
+          <div className="cp-week-nav__label">
+            <div className="cp-week-nav__title">Неделя</div>
+            <div className="cp-week-nav__range">{rangeLabel}</div>
+          </div>
+          <button
+            type="button"
+            className="cp-week-nav__btn"
+            onClick={() => onShiftWeek?.(1)}
+            aria-label="Следующая неделя"
+          >
+            ›
+          </button>
+        </Div>
+        <Div>
+          <div className="cp-week-summary">
+            {total
+              ? `${total} публикац${total === 1 ? 'ия' : total < 5 ? 'ии' : 'ий'}`
+              : 'На этой неделе пока пусто'}
+          </div>
+        </Div>
+      </Group>
+      {days.map(({ date, posts: dayPosts }) => {
+        const today = sameDay(date, new Date());
+        return (
+          <Group
+            key={dayKey(date.getFullYear(), date.getMonth(), date.getDate())}
+            header={
+              <Header mode="secondary">
+                {dayLabelShort(date)}
+                {today ? ' · сегодня' : ''}
+              </Header>
+            }
+          >
+            {dayPosts.length === 0 ? (
+              <Div>
+                <div className="cp-week-empty-day">Нет слотов</div>
+              </Div>
+            ) : (
+              dayPosts.map((p) => {
+                const meta = KIND_MAP[p.kind] || KIND_MAP.post;
+                const done = p.reminded === 1 || p.placed === 1;
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    className={`cp-week-row${done ? ' cp-week-row--done' : ''}`}
+                    onClick={() => onOpenPost?.(p)}
+                  >
+                    <span
+                      className="cp-week-row__bar"
+                      style={{ background: pillColor(p) }}
+                    />
+                    <span className="cp-week-row__time">
+                      {formatTime(p.publish_at)}
+                    </span>
+                    <span className="cp-week-row__meta">
+                      {meta.label}
+                      <NetBadge network={p.network} size="sm" />
+                    </span>
+                    <span className="cp-week-row__text">
+                      {(p.text || '').trim() || '(без текста)'}
+                    </span>
+                  </button>
+                );
+              })
+            )}
+          </Group>
+        );
+      })}
+    </div>
+  );
+}
+
+function NotifyBanner({ onEnabled }) {
+  const [perm, setPerm] = useState(() => notificationSupport());
+  const [busy, setBusy] = useState(false);
+  if (perm !== 'default') return null;
+
+  return (
+    <Group>
+      <Div className="cp-notify-banner">
+        <div className="cp-notify-banner__text">
+          Включить напоминания за час до публикации?
+        </div>
+        <Button
+          size="s"
+          mode="primary"
+          disabled={busy}
+          onClick={async () => {
+            setBusy(true);
+            const next = await requestNotificationPermission();
+            setPerm(next);
+            setBusy(false);
+            if (next === 'granted') onEnabled?.();
+          }}
+        >
+          Включить
+        </Button>
+      </Div>
+    </Group>
   );
 }
 
@@ -1283,6 +1603,8 @@ function TemplatesList({
   posts,
   history,
 }) {
+  const [query, setQuery] = useState('');
+
   const cats = useMemo(() => {
     const base = categories?.length > 0 ? categories : DEFAULT_CATEGORIES;
     const extras = [];
@@ -1294,9 +1616,24 @@ function TemplatesList({
   }, [templates, categories]);
 
   const filtered = useMemo(() => {
-    if (!category || category === 'Все') return templates;
-    return templates.filter((t) => t.category === category);
-  }, [templates, category]);
+    let list =
+      !category || category === 'Все'
+        ? templates
+        : templates.filter((t) => t.category === category);
+    const q = query.trim().toLowerCase();
+    if (q) {
+      list = list.filter(
+        (t) =>
+          String(t.text || '')
+            .toLowerCase()
+            .includes(q) ||
+          String(t.category || '')
+            .toLowerCase()
+            .includes(q)
+      );
+    }
+    return list;
+  }, [templates, category, query]);
 
   return (
     <div className="cp-form-block cp-templates">
@@ -1322,6 +1659,13 @@ function TemplatesList({
         </Div>
       )}
       <Div className="cp-templates__filters">
+        <Input
+          className="cp-tpl-search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Поиск по тексту или тематике…"
+          type="search"
+        />
         <div className="cp-tpl-filter" role="tablist" aria-label="Тематика">
           {cats.map((c) => (
             <button
@@ -1360,18 +1704,20 @@ function TemplatesList({
       <Group>
         {filtered.length === 0 ? (
           <Placeholder
-            header="Нет заготовок"
+            header={query.trim() ? 'Ничего не найдено' : 'Нет заготовок'}
             action={
-              !selectMode ? (
+              !selectMode && !query.trim() ? (
                 <Button size="m" mode="primary" onClick={() => onAdd?.()}>
                   Создать первую
                 </Button>
               ) : null
             }
           >
-            {selectMode
-              ? 'В этой тематике пока пусто'
-              : 'Создайте тексты по тематикам — они появятся здесь'}
+            {query.trim()
+              ? 'Попробуйте другой запрос или смените тематику'
+              : selectMode
+                ? 'В этой тематике пока пусто'
+                : 'Создайте тексты по тематикам — они появятся здесь'}
           </Placeholder>
         ) : (
           filtered.map((t) => {
@@ -1438,6 +1784,7 @@ function TemplateFormBody({ draft, onBack, onSaved, onDeleted, categories }) {
   const [category, setCategory] = useState(draft?.category || 'Другое');
   const [text, setText] = useState(draft?.text || '');
   const [busy, setBusy] = useState(false);
+  const [confirmDel, setConfirmDel] = useState(false);
 
   const save = async () => {
     setBusy(true);
@@ -1459,6 +1806,7 @@ function TemplateFormBody({ draft, onBack, onSaved, onDeleted, categories }) {
 
   const remove = async () => {
     if (!isEdit) return;
+    setConfirmDel(false);
     setBusy(true);
     try {
       await api(`/api/templates/${draft.id}`, { method: 'DELETE' });
@@ -1515,13 +1863,21 @@ function TemplateFormBody({ draft, onBack, onSaved, onDeleted, categories }) {
               mode="secondary"
               appearance="negative"
               disabled={busy}
-              onClick={remove}
+              onClick={() => setConfirmDel(true)}
             >
               Удалить
             </Button>
           </Div>
         )}
       </Group>
+      {confirmDel && (
+        <ConfirmDialog
+          title="Удалить заготовку?"
+          message="Текст будет удалён безвозвратно."
+          onCancel={() => setConfirmDel(false)}
+          onConfirm={remove}
+        />
+      )}
     </div>
   );
 }
@@ -1531,6 +1887,7 @@ function CategoriesManageBody({ categories, onChanged, onSnack }) {
   const [editing, setEditing] = useState(null);
   const [editValue, setEditValue] = useState('');
   const [busy, setBusy] = useState(false);
+  const [confirmCat, setConfirmCat] = useState(null);
 
   const add = async () => {
     const n = name.trim();
@@ -1592,6 +1949,7 @@ function CategoriesManageBody({ categories, onChanged, onSnack }) {
 
   const remove = async (cat) => {
     if (busy || cat === 'Другое') return;
+    setConfirmCat(null);
     setBusy(true);
     try {
       await api(`/api/categories?name=${encodeURIComponent(cat)}`, {
@@ -1688,7 +2046,7 @@ function CategoriesManageBody({ categories, onChanged, onSnack }) {
                         : 'Удалить тематику'
                     }
                     disabled={busy || c === 'Другое'}
-                    onClick={() => remove(c)}
+                    onClick={() => setConfirmCat(c)}
                   >
                     <IconTrash />
                   </button>
@@ -1703,6 +2061,14 @@ function CategoriesManageBody({ categories, onChanged, onSnack }) {
           При удалении посты и заготовки этой тематики перейдут в «Другое».
         </Footnote>
       </Div>
+      {confirmCat && (
+        <ConfirmDialog
+          title={`Удалить «${confirmCat}»?`}
+          message="Посты и заготовки этой тематики перейдут в «Другое»."
+          onCancel={() => setConfirmCat(null)}
+          onConfirm={() => remove(confirmCat)}
+        />
+      )}
     </div>
   );
 }
@@ -1724,6 +2090,9 @@ export default function App() {
   const [snack, setSnack] = useState(null);
   const [movePost, setMovePost] = useState(null);
   const [historyFocus, setHistoryFocus] = useState(null);
+  const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
+  const [confirmTpl, setConfirmTpl] = useState(null);
+  const planPostsRef = useRef(planPosts);
 
   const year = cursor.getFullYear();
   const month = cursor.getMonth();
@@ -1801,6 +2170,14 @@ export default function App() {
   useEffect(() => {
     loadHistory();
   }, [loadHistory]);
+
+  useEffect(() => {
+    planPostsRef.current = planPosts;
+  }, [planPosts]);
+
+  useEffect(() => {
+    return startReminderLoop(() => planPostsRef.current);
+  }, []);
 
   // Live updates: Firebase (all devices) or storage event (other tabs)
   useEffect(() => {
@@ -2023,6 +2400,13 @@ export default function App() {
   };
 
   const quickDeleteTemplate = async (t) => {
+    setConfirmTpl(t);
+  };
+
+  const confirmQuickDeleteTemplate = async () => {
+    const t = confirmTpl;
+    setConfirmTpl(null);
+    if (!t) return;
     try {
       await api(`/api/templates/${t.id}`, { method: 'DELETE' });
       await loadTemplates();
@@ -2031,6 +2415,23 @@ export default function App() {
       console.error(e);
       setSnack('Не удалось удалить');
     }
+  };
+
+  const openFromUpcoming = (p) => {
+    const d = new Date(p.publish_at);
+    setCursor(startOfMonth(d));
+    setDayFocus({
+      year: d.getFullYear(),
+      month: d.getMonth(),
+      day: d.getDate(),
+    });
+    setDraft({ post: p, returnTo: 'day' });
+    setActivePanel('edit');
+  };
+
+  const openWeek = () => {
+    setWeekStart(startOfWeek(new Date()));
+    setActivePanel('week');
   };
 
   const deleteHistoryEntry = async (h) => {
@@ -2065,7 +2466,7 @@ export default function App() {
       (activePanel === 'templates' && !tplSelectMode)) &&
     !tplSelectMode;
 
-  const mainPanel = ['main', 'day', 'edit', 'move'].includes(activePanel)
+  const mainPanel = ['main', 'day', 'edit', 'move', 'week'].includes(activePanel)
     ? activePanel
     : 'main';
   const historyPanel =
@@ -2109,6 +2510,7 @@ export default function App() {
   };
 
   return (
+    <>
     <Epic
       activeStory={story}
       tabbar={
@@ -2150,15 +2552,27 @@ export default function App() {
               </PanelHeaderButton>
             }
             after={
-              <PanelHeaderButton
-                onClick={() => setCursor((c) => addMonths(c, 1))}
-              >
-                ›
-              </PanelHeaderButton>
+              <div className="cp-header-after">
+                <SyncBadge />
+                <PanelHeaderButton onClick={openWeek} aria-label="Неделя">
+                  Нед
+                </PanelHeaderButton>
+                <PanelHeaderButton
+                  onClick={() => setCursor((c) => addMonths(c, 1))}
+                >
+                  ›
+                </PanelHeaderButton>
+              </div>
             }
           >
             {MONTHS[month]} {year}
           </PanelHeader>
+          <NotifyBanner onEnabled={() => setSnack('Напоминания включены')} />
+          <UpcomingStrip
+            posts={planPosts}
+            onOpenPost={openFromUpcoming}
+            onOpenWeek={openWeek}
+          />
           <Group>
             <MonthGrid
               year={year}
@@ -2170,6 +2584,25 @@ export default function App() {
             />
           </Group>
           {snack && activePanel === 'main' && (
+            <Snackbar onClose={() => setSnack(null)}>{snack}</Snackbar>
+          )}
+        </Panel>
+
+        <Panel id="week">
+          <PanelHeader
+            before={<PanelHeaderBack onClick={() => setActivePanel('main')} />}
+          >
+            Неделя
+          </PanelHeader>
+          <WeekPanelBody
+            weekStart={weekStart}
+            posts={planPosts}
+            onOpenPost={openFromUpcoming}
+            onShiftWeek={(dir) =>
+              setWeekStart((w) => addDaysDate(w, dir * 7))
+            }
+          />
+          {snack && activePanel === 'week' && (
             <Snackbar onClose={() => setSnack(null)}>{snack}</Snackbar>
           )}
         </Panel>
@@ -2394,5 +2827,14 @@ export default function App() {
         </Panel>
       </View>
     </Epic>
+    {confirmTpl && (
+      <ConfirmDialog
+        title="Удалить заготовку?"
+        message="Текст будет удалён безвозвратно."
+        onCancel={() => setConfirmTpl(null)}
+        onConfirm={confirmQuickDeleteTemplate}
+      />
+    )}
+    </>
   );
 }
