@@ -1607,11 +1607,16 @@ function PostFormBody({
                   Скопировать
                 </Button>
               </div>
-              <Textarea
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                placeholder={placeholder}
-              />
+              <div
+                className="cp-post-textarea-wrap"
+                onTouchMove={(e) => e.stopPropagation()}
+              >
+                <Textarea
+                  value={text}
+                  onChange={(e) => setText(e.target.value)}
+                  placeholder={placeholder}
+                />
+              </div>
             </FormItem>
           </>
         )}

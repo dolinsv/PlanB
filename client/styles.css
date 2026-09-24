@@ -270,6 +270,20 @@ body {
   color: #0077ff;
 }
 
+/* High-contrast VK mark on solid accent pills / banners */
+.cp-pill .cp-net--vk,
+.cp-type-banner__net .cp-net--vk {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.28);
+  padding: 1px;
+  box-sizing: border-box;
+}
+
+.cp-pill .cp-net--ig,
+.cp-type-banner__net .cp-net--ig {
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35);
+}
+
 .cp-net--lg {
   width: 22px;
   height: 22px;
@@ -1298,6 +1312,48 @@ body {
 
 .cp-post-form {
   padding-bottom: 76px;
+  overscroll-behavior: none;
+  touch-action: pan-y;
+}
+
+.cp-post-form .vkuiGroup,
+.cp-post-form .vkuiFormItem {
+  overscroll-behavior: none;
+}
+
+.cp-post-form .vkuiTextarea,
+.cp-post-form .vkuiTextarea__el,
+.cp-post-form textarea {
+  overscroll-behavior: contain;
+  max-height: min(34vh, 220px);
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+}
+
+.cp-post-textarea-wrap {
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+}
+
+.cp-post-form .cp-type-banner {
+  margin-bottom: 0;
+  padding: 10px 12px;
+}
+
+.cp-post-form .cp-type-banner__badge {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+}
+
+.cp-post-form .cp-type-banner__title {
+  font-size: 15px;
+}
+
+.cp-post-form .vkuiFormItem {
+  padding-top: 6px;
+  padding-bottom: 6px;
 }
 
 .cp-post-sticky {
