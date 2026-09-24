@@ -1238,8 +1238,8 @@ body {
 
 .cp-when {
   display: grid;
-  grid-template-columns: 1.35fr 1fr;
-  gap: 8px;
+  grid-template-columns: 1.35fr 0.9fr;
+  gap: 6px;
   width: 100%;
   align-items: end;
 }
@@ -1248,41 +1248,137 @@ body {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
 }
 
 .cp-when__label {
-  font-size: 12px;
-  font-weight: 500;
+  font-size: 11px;
+  font-weight: 600;
   color: var(--vkui--color_text_secondary);
 }
 
 .cp-when .vkuiFormField,
 .cp-when .vkuiInput {
-  min-height: 40px;
+  min-height: 34px;
+}
+
+.cp-post-form .cp-when-item {
+  padding-top: 4px;
+  padding-bottom: 4px;
 }
 
 @media (max-width: 480px) {
   .cp-when {
-    grid-template-columns: 1.4fr 0.9fr;
-    gap: 8px;
+    grid-template-columns: 1.35fr 0.85fr;
+    gap: 6px;
   }
 
   .cp-when__label {
-    font-size: 11px;
+    font-size: 10px;
   }
 
   .cp-when .vkuiFormField,
   .cp-when .vkuiInput,
   .cp-when input {
-    min-height: 38px !important;
-    font-size: 15px !important;
+    min-height: 32px !important;
+    font-size: 13px !important;
+    padding-top: 4px !important;
+    padding-bottom: 4px !important;
   }
 
   .cp-post-form .vkuiFormItem:has(.cp-when) {
-    padding-top: 6px;
-    padding-bottom: 6px;
+    padding-top: 2px;
+    padding-bottom: 2px;
   }
+
+  .cp-post-form textarea {
+    min-height: 120px;
+  }
+}
+
+.cp-post-form {
+  padding-bottom: 76px;
+}
+
+.cp-post-sticky {
+  position: sticky;
+  bottom: 10px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin: 8px 12px 4px;
+  pointer-events: none;
+}
+
+.cp-post-sticky > * {
+  pointer-events: auto;
+}
+
+.cp-post-sticky__save {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  width: 52px;
+  height: 52px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 16px;
+  background: var(--vkui--color_background_accent);
+  color: #fff;
+  font: inherit;
+  cursor: pointer;
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--vkui--color_background_accent) 35%, transparent);
+}
+
+.cp-post-sticky__save span {
+  display: none;
+}
+
+.cp-post-sticky__save svg {
+  width: 22px;
+  height: 22px;
+  display: block;
+}
+
+.cp-post-sticky__save:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.cp-post-sticky__save:not(:disabled):active {
+  transform: scale(0.97);
+}
+
+.cp-post-sticky__danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, #e64646 35%, var(--vkui--color_field_border_alpha));
+  border-radius: 14px;
+  background: var(--vkui--color_background_content);
+  color: #e64646;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.cp-post-sticky__danger svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
+.cp-post-sticky__danger:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .cp-dots {

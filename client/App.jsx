@@ -357,6 +357,25 @@ function IconTrash() {
   );
 }
 
+function IconSave() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M5 4.5h11.2L19.5 8v11.5a1 1 0 0 1-1 1H5.5a1 1 0 0 1-1-1V5.5a1 1 0 0 1 1-1Z"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M8 4.5V9h7.5V4.5M8 19.5v-5.2h8V19.5"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 function startOfWeek(d) {
   const x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
   const dow = (x.getDay() + 6) % 7; // Mon=0
@@ -1538,6 +1557,28 @@ function PostFormBody({
               </FormItem>
             )}
 
+            <FormItem className="cp-when-item" top="Когда">
+              <div className="cp-when">
+                <div className="cp-when__field">
+                  <div className="cp-when__label">Дата</div>
+                  <Input
+                    type="date"
+                    value={datePart}
+                    onChange={(e) => setDatePart(e.target.value)}
+                  />
+                </div>
+                <div className="cp-when__field">
+                  <div className="cp-when__label">Время</div>
+                  <Input
+                    type="time"
+                    value={timePart}
+                    step={300}
+                    onChange={(e) => setTimePart(e.target.value)}
+                  />
+                </div>
+              </div>
+            </FormItem>
+
             <FormItem top={isEdit ? 'Текст' : fromTemplate ? 'Текст · можно подправить' : 'Текст'}>
               <div className="cp-text-toolbar">
                 {!isEdit && (
@@ -1575,71 +1616,56 @@ function PostFormBody({
           </>
         )}
 
-        <FormItem top="Когда публиковать">
-          <div className="cp-when">
-            <div className="cp-when__field">
-              <div className="cp-when__label">Дата</div>
-              <Input
-                type="date"
-                value={datePart}
-                onChange={(e) => setDatePart(e.target.value)}
-              />
+        {!showContentEditor && (
+          <FormItem className="cp-when-item" top="Когда">
+            <div className="cp-when">
+              <div className="cp-when__field">
+                <div className="cp-when__label">Дата</div>
+                <Input
+                  type="date"
+                  value={datePart}
+                  onChange={(e) => setDatePart(e.target.value)}
+                />
+              </div>
+              <div className="cp-when__field">
+                <div className="cp-when__label">Время</div>
+                <Input
+                  type="time"
+                  value={timePart}
+                  step={300}
+                  onChange={(e) => setTimePart(e.target.value)}
+                />
+              </div>
             </div>
-            <div className="cp-when__field">
-              <div className="cp-when__label">Время</div>
-              <Input
-                type="time"
-                value={timePart}
-                step={300}
-                onChange={(e) => setTimePart(e.target.value)}
-              />
-            </div>
-          </div>
-        </FormItem>
-      </Group>
-
-      <Group>
-        <Div>
-          <Button
-            size="l"
-            stretched
-            mode="secondary"
-            disabled={copyBusy || !text.trim()}
-            onClick={copyText}
-            before={
-              <span className="cp-btn-ico" aria-hidden="true">
-                <IconCopy />
-              </span>
-            }
-          >
-            Скопировать текст для соцсети
-          </Button>
-        </Div>
-        <Div>
-          <Button
-            size="l"
-            stretched
-            disabled={busy || !text.trim() || !datePart || !timePart}
-            onClick={save}
-          >
-            Сохранить {kindMeta.label.toLowerCase()}
-          </Button>
-        </Div>
-        {isEdit && (
-          <Div>
-            <Button
-              size="l"
-              stretched
-              mode="secondary"
-              appearance="negative"
-              disabled={busy}
-              onClick={remove}
-            >
-              Удалить
-            </Button>
-          </Div>
+          </FormItem>
         )}
       </Group>
+
+      <div className="cp-post-sticky">
+        {isEdit && (
+          <button
+            type="button"
+            className="cp-post-sticky__danger"
+            disabled={busy}
+            onClick={remove}
+            aria-label="Удалить"
+            title="Удалить"
+          >
+            <IconTrash />
+          </button>
+        )}
+        <button
+          type="button"
+          className="cp-post-sticky__save"
+          disabled={busy || !text.trim() || !datePart || !timePart}
+          onClick={save}
+          aria-label="Сохранить"
+          title="Сохранить"
+        >
+          <IconSave />
+          <span>Сохранить</span>
+        </button>
+      </div>
     </div>
   );
 }
