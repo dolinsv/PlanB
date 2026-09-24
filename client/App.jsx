@@ -13,7 +13,6 @@ import {
   FormItem,
   Textarea,
   Input,
-  Snackbar,
   CellButton,
   Placeholder,
   Epic,
@@ -2142,7 +2141,6 @@ export default function App() {
   const [tplSelectMode, setTplSelectMode] = useState(false);
   const [categories, setCategories] = useState(() => [...DEFAULT_CATEGORIES]);
   const [history, setHistory] = useState([]);
-  const [snack, setSnack] = useState(null);
   const [movePost, setMovePost] = useState(null);
   const [historyFocus, setHistoryFocus] = useState(null);
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
@@ -2349,7 +2347,6 @@ export default function App() {
     } catch (e) {
       console.error(e);
     }
-    setSnack('Перенесено');
     setActivePanel('day');
     loadPlanPosts();
   };
@@ -2379,7 +2376,6 @@ export default function App() {
       });
       await loadPosts();
       await loadPlanPosts();
-      setSnack('Перенесено');
     } catch (e) {
       console.error(e);
     }
@@ -2430,14 +2426,12 @@ export default function App() {
     loadPosts();
     loadPlanPosts();
     loadHistory();
-    setSnack('Сохранено');
   };
 
   const afterDelete = () => {
     loadPosts();
     loadPlanPosts();
     loadHistory();
-    setSnack('Удалено');
   };
 
   const deletePostFromDay = async (p) => {
@@ -2446,7 +2440,6 @@ export default function App() {
       afterDelete();
     } catch (e) {
       console.error(e);
-      setSnack('Не удалось удалить');
     }
   };
 
@@ -2461,10 +2454,8 @@ export default function App() {
     try {
       await api(`/api/templates/${t.id}`, { method: 'DELETE' });
       await loadTemplates();
-      setSnack('Заготовка удалена');
     } catch (e) {
       console.error(e);
-      setSnack('Не удалось удалить');
     }
   };
 
@@ -2508,10 +2499,8 @@ export default function App() {
         setHistoryFocus(null);
         setActivePanel('history');
       }
-      setSnack('Удалено из истории');
     } catch (e) {
       console.error(e);
-      setSnack('Не удалось удалить');
     }
   };
 
@@ -2643,10 +2632,7 @@ export default function App() {
             onOpenTomorrow={() => openDayByOffset(1)}
             onOpenWeek={openWeek}
           />
-          <NotifyBanner onEnabled={() => setSnack('Напоминания включены')} />
-          {snack && activePanel === 'main' && (
-            <Snackbar onClose={() => setSnack(null)}>{snack}</Snackbar>
-          )}
+          <NotifyBanner />
         </Panel>
 
         <Panel id="week">
@@ -2663,9 +2649,6 @@ export default function App() {
               setWeekStart((w) => addDaysDate(w, dir * 7))
             }
           />
-          {snack && activePanel === 'week' && (
-            <Snackbar onClose={() => setSnack(null)}>{snack}</Snackbar>
-          )}
         </Panel>
 
         <Panel id="day">
@@ -2682,9 +2665,6 @@ export default function App() {
             onMove={openMove}
             onDelete={deletePostFromDay}
           />
-          {snack && activePanel === 'day' && (
-            <Snackbar onClose={() => setSnack(null)}>{snack}</Snackbar>
-          )}
         </Panel>
 
         <Panel id="edit">
@@ -2703,11 +2683,7 @@ export default function App() {
               onSaved={afterSave}
               onDeleted={afterDelete}
               onPickTemplate={() => openTemplates(true)}
-              onSnack={setSnack}
             />
-          )}
-          {snack && activePanel === 'edit' && (
-            <Snackbar onClose={() => setSnack(null)}>{snack}</Snackbar>
           )}
         </Panel>
 
@@ -2722,9 +2698,6 @@ export default function App() {
               onBack={backFromMove}
               onMoved={afterMoved}
             />
-          )}
-          {snack && activePanel === 'move' && (
-            <Snackbar onClose={() => setSnack(null)}>{snack}</Snackbar>
           )}
         </Panel>
       </View>
@@ -2775,9 +2748,6 @@ export default function App() {
               })
             )}
           </Group>
-          {snack && activePanel === 'history' && (
-            <Snackbar onClose={() => setSnack(null)}>{snack}</Snackbar>
-          )}
         </Panel>
 
         <Panel id="history-detail">
@@ -2790,17 +2760,12 @@ export default function App() {
             <HistoryDetailBody
               key={historyFocus.id}
               entry={historyFocus}
-              onSnack={setSnack}
               onDeleted={() => {
                 loadHistory();
                 setHistoryFocus(null);
                 setActivePanel('history');
-                setSnack('Удалено из истории');
               }}
             />
-          )}
-          {snack && activePanel === 'history-detail' && (
-            <Snackbar onClose={() => setSnack(null)}>{snack}</Snackbar>
           )}
         </Panel>
       </View>
@@ -2830,9 +2795,6 @@ export default function App() {
             posts={planPosts}
             history={history}
           />
-          {snack && activePanel === 'templates' && (
-            <Snackbar onClose={() => setSnack(null)}>{snack}</Snackbar>
-          )}
         </Panel>
 
         <Panel id="categories">
@@ -2846,11 +2808,7 @@ export default function App() {
           <CategoriesManageBody
             categories={categories}
             onChanged={afterCategoriesChanged}
-            onSnack={setSnack}
           />
-          {snack && activePanel === 'categories' && (
-            <Snackbar onClose={() => setSnack(null)}>{snack}</Snackbar>
-          )}
         </Panel>
 
         <Panel id="template-edit">
@@ -2877,11 +2835,9 @@ export default function App() {
               }}
               onSaved={() => {
                 loadTemplates();
-                setSnack('Заготовка сохранена');
               }}
               onDeleted={() => {
                 loadTemplates();
-                setSnack('Заготовка удалена');
               }}
             />
           )}
