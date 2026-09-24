@@ -447,6 +447,126 @@ function SyncBadge() {
   );
 }
 
+function MonthHero({ year, month, planned, placed, onPrev, onNext }) {
+  const total = planned + placed;
+  const stats =
+    total === 0
+      ? 'Пока пусто'
+      : [
+          planned ? `${planned} в плане` : null,
+          placed ? `${placed} размещено` : null,
+        ]
+          .filter(Boolean)
+          .join(' · ');
+
+  return (
+    <Div className="cp-month-hero">
+      <div className="cp-month-hero__inner">
+        <button
+          type="button"
+          className="cp-month-hero__nav"
+          onClick={onPrev}
+          aria-label="Предыдущий месяц"
+        >
+          ‹
+        </button>
+        <div className="cp-month-hero__center">
+          <div className="cp-month-hero__month">{MONTHS[month]}</div>
+          <div className="cp-month-hero__meta">
+            <span className="cp-month-hero__year">{year}</span>
+            <span className="cp-month-hero__dot" aria-hidden="true" />
+            <span className="cp-month-hero__stats">{stats}</span>
+          </div>
+        </div>
+        <button
+          type="button"
+          className="cp-month-hero__nav"
+          onClick={onNext}
+          aria-label="Следующий месяц"
+        >
+          ›
+        </button>
+      </div>
+    </Div>
+  );
+}
+
+function UpcomingList({ posts, onOpenPost }) {
+  const items = useMemo(() => {
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    return (posts || [])
+      .filter((p) => {
+        if (p.reminded === 1 || p.placed === 1) return false;
+        const t = new Date(p.publish_at);
+        return Number.isFinite(t.getTime()) && t >= start;
+      })
+      .sort((a, b) => String(a.publish_at).localeCompare(String(b.publish_at)))
+      .slice(0, 5);
+  }, [posts]);
+
+  if (items.length === 0) {
+    return (
+      <Group>
+        <Div className="cp-next">
+          <div className="cp-next__head">Ближайшие</div>
+          <div className="cp-next__empty">
+            Нет запланированных публикаций впереди
+          </div>
+        </Div>
+      </Group>
+    );
+  }
+
+  return (
+    <Group>
+      <Div className="cp-next">
+        <div className="cp-next__head">Ближайшие</div>
+        <div className="cp-next__list">
+          {items.map((p) => {
+            const d = new Date(p.publish_at);
+            const meta = KIND_MAP[p.kind] || KIND_MAP.post;
+            const today = sameDay(d, new Date());
+            const tomorrow = sameDay(d, addDaysDate(new Date(), 1));
+            const dayLabel = today
+              ? 'Сегодня'
+              : tomorrow
+                ? 'Завтра'
+                : dayLabelShort(d);
+            return (
+              <button
+                key={p.id}
+                type="button"
+                className="cp-next__row"
+                onClick={() => onOpenPost?.(p)}
+              >
+                <span
+                  className="cp-next__bar"
+                  style={{ background: pillColor(p) }}
+                />
+                <span className="cp-next__when">
+                  <span className="cp-next__day">{dayLabel}</span>
+                  <span className="cp-next__time">{formatTime(p.publish_at)}</span>
+                </span>
+                <span className="cp-next__body">
+                  <span className="cp-next__title">
+                    {(p.text || '').trim() || '(без текста)'}
+                  </span>
+                  <span className="cp-next__sub">
+                    {meta.label}
+                    <NetBadge network={p.network} size="sm" />
+                    {p.category ? ` · ${p.category}` : ''}
+                  </span>
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </Div>
+    </Group>
+  );
+}
+
 function UpcomingStrip({ posts, onOpenToday, onOpenTomorrow, onOpenWeek }) {
   const { todayCount, tomorrowCount, nextTodayTime } = useMemo(() => {
     const now = new Date();
@@ -2291,6 +2411,20 @@ export default function App() {
     return map;
   }, [posts]);
 
+  const monthStats = useMemo(() => {
+    const from = new Date(year, month, 1).getTime();
+    const to = new Date(year, month + 1, 1).getTime();
+    let planned = 0;
+    let placed = 0;
+    for (const p of planPosts || []) {
+      const t = new Date(p.publish_at).getTime();
+      if (!Number.isFinite(t) || t < from || t >= to) continue;
+      if (p.reminded === 1 || p.placed === 1) placed += 1;
+      else planned += 1;
+    }
+    return { planned, placed };
+  }, [planPosts, year, month]);
+
   const dayPosts = useMemo(() => {
     if (!dayFocus) return [];
     const key = dayKey(dayFocus.year, dayFocus.month, dayFocus.day);
@@ -2598,24 +2732,17 @@ export default function App() {
     >
       <View id="main" activePanel={mainPanel}>
         <Panel id="main">
-          <PanelHeader
-            before={
-              <PanelHeaderButton
-                onClick={() => setCursor((c) => addMonths(c, -1))}
-              >
-                ‹
-              </PanelHeaderButton>
-            }
-            after={
-              <PanelHeaderButton
-                onClick={() => setCursor((c) => addMonths(c, 1))}
-              >
-                ›
-              </PanelHeaderButton>
-            }
-          >
-            {MONTHS[month]} {year}
+          <PanelHeader delimiter="none" className="cp-main-header">
+            PlanB
           </PanelHeader>
+          <MonthHero
+            year={year}
+            month={month}
+            planned={monthStats.planned}
+            placed={monthStats.placed}
+            onPrev={() => setCursor((c) => addMonths(c, -1))}
+            onNext={() => setCursor((c) => addMonths(c, 1))}
+          />
           <Group>
             <MonthGrid
               year={year}
@@ -2632,6 +2759,7 @@ export default function App() {
             onOpenTomorrow={() => openDayByOffset(1)}
             onOpenWeek={openWeek}
           />
+          <UpcomingList posts={planPosts} onOpenPost={openFromUpcoming} />
           <NotifyBanner />
         </Panel>
 
