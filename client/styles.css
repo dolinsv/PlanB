@@ -80,6 +80,10 @@ body {
   font-weight: 600;
 }
 
+.cp-weekday--weekend {
+  color: #e64646;
+}
+
 .cp-cell {
   min-height: var(--cp-cell-min);
   border-radius: 10px;
@@ -95,6 +99,14 @@ body {
     box-shadow 0.18s var(--cp-ease),
     background 0.18s ease;
   animation: cp-scale-in 0.32s var(--cp-ease) both;
+}
+
+.cp-cell--weekend {
+  background: color-mix(in srgb, #e64646 7%, var(--vkui--color_background_secondary));
+}
+
+.cp-cell--weekend .cp-cell__day {
+  color: #e64646;
 }
 
 .cp-cell--drop {

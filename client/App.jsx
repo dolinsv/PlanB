@@ -456,7 +456,10 @@ function MonthGrid({
     <Div style={{ paddingTop: 0, paddingBottom: 8 }}>
       <div className="cp-calendar">
         {WEEKDAYS.map((w) => (
-          <div key={w} className="cp-weekday">
+          <div
+            key={w}
+            className={`cp-weekday${w === 'Сб' || w === 'Вс' ? ' cp-weekday--weekend' : ''}`}
+          >
             {w}
           </div>
         ))}
@@ -473,13 +476,14 @@ function MonthGrid({
           const dots = dayPosts.slice(0, CAL_DOTS);
           const dotsMore = dayPosts.length - dots.length;
           const todayCell = isToday(day);
+          const weekend = idx % 7 >= 5;
 
           return (
             <div
               key={key}
               role="button"
               tabIndex={0}
-              className={`cp-cell${todayCell ? ' cp-cell--today' : ''}${dropDay === day ? ' cp-cell--drop' : ''}`}
+              className={`cp-cell${todayCell ? ' cp-cell--today' : ''}${weekend ? ' cp-cell--weekend' : ''}${dropDay === day ? ' cp-cell--drop' : ''}`}
               onClick={() => onOpenDay(day)}
               onDragOver={(e) => {
                 if (!onDropPost) return;
