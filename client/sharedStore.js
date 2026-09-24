@@ -94,21 +94,128 @@ function normalizeStore(raw) {
   };
 }
 
+function seedTextSet() {
+  return new Set(SEED_TEMPLATES.map((t) => String(t.text).trim()));
+}
+
+/** Default demo templates only — not user-created content. */
+function isSeedOnlyTemplates(templates) {
+  const list = templates || [];
+  if (list.length === 0) return true;
+  if (list.length > SEED_TEMPLATES.length) return false;
+  const seeds = seedTextSet();
+  return list.every((t) => seeds.has(String(t.text || '').trim()));
+}
+
+function hasCustomTemplates(s) {
+  return Boolean(s && !isSeedOnlyTemplates(s.templates));
+}
+
 function hasUserData(s) {
-  return Boolean(s && (s.posts?.length || s.history?.length));
+  return Boolean(
+    s && (s.posts?.length || s.history?.length || hasCustomTemplates(s))
+  );
+}
+
+function mergeById(primary, secondary) {
+  const map = new Map();
+  for (const item of secondary || []) {
+    if (item == null || item.id == null) continue;
+    map.set(Number(item.id), item);
+  }
+  for (const item of primary || []) {
+    if (item == null || item.id == null) continue;
+    map.set(Number(item.id), item);
+  }
+  return [...map.values()];
+}
+
+function maxSeq(list, fallback = 1) {
+  let n = fallback;
+  for (const item of list || []) {
+    const id = Number(item?.id);
+    if (Number.isFinite(id) && id + 1 > n) n = id + 1;
+  }
+  return n;
 }
 
 /**
- * Prefer newer snapshot, but never let an empty cloud shell wipe local posts.
+ * Merge cloud + device. Never let an empty/seed cloud wipe real local data
+ * (posts, history, or custom templates).
  */
-function pickPreferred(remote, local) {
+function mergeStores(remote, local) {
   if (!local) return remote;
   if (!remote) return local;
-  const remoteEmpty = !hasUserData(remote);
-  const localHas = hasUserData(local);
-  if (remoteEmpty && localHas) return local;
-  if ((remote.updated_at || '') >= (local.updated_at || '')) return remote;
-  return local;
+
+  const remoteNewer =
+    (remote.updated_at || '') >= (local.updated_at || '');
+  const newer = remoteNewer ? remote : local;
+  const older = remoteNewer ? local : remote;
+
+  let templates;
+  if (hasCustomTemplates(older) && isSeedOnlyTemplates(newer.templates)) {
+    templates = older.templates;
+  } else if (hasCustomTemplates(newer) && isSeedOnlyTemplates(older.templates)) {
+    templates = newer.templates;
+  } else if (hasCustomTemplates(older) && hasCustomTemplates(newer)) {
+    templates = mergeById(newer.templates, older.templates);
+  } else {
+    templates = (newer.templates?.length ? newer.templates : older.templates) || [];
+  }
+
+  let posts;
+  if (!(newer.posts?.length) && older.posts?.length) {
+    posts = older.posts;
+  } else if (newer.posts?.length && older.posts?.length) {
+    posts = mergeById(newer.posts, older.posts);
+  } else {
+    posts = (newer.posts?.length ? newer.posts : older.posts) || [];
+  }
+
+  let history;
+  if (!(newer.history?.length) && older.history?.length) {
+    history = older.history;
+  } else if (newer.history?.length && older.history?.length) {
+    history = mergeById(newer.history, older.history);
+  } else {
+    history = (newer.history?.length ? newer.history : older.history) || [];
+  }
+
+  const merged = {
+    posts,
+    templates,
+    history,
+    seq: {
+      posts: Math.max(
+        Number(newer.seq?.posts) || 1,
+        Number(older.seq?.posts) || 1,
+        maxSeq(posts)
+      ),
+      templates: Math.max(
+        Number(newer.seq?.templates) || 1,
+        Number(older.seq?.templates) || 1,
+        maxSeq(templates)
+      ),
+      history: Math.max(
+        Number(newer.seq?.history) || 1,
+        Number(older.seq?.history) || 1,
+        maxSeq(history)
+      ),
+    },
+    updated_at: newer.updated_at,
+  };
+
+  const rescued =
+    (hasCustomTemplates({ templates }) &&
+      isSeedOnlyTemplates(newer.templates)) ||
+    (posts.length || 0) > (newer.posts?.length || 0) ||
+    (history.length || 0) > (newer.history?.length || 0);
+
+  if (rescued) {
+    merged.updated_at = new Date().toISOString();
+  }
+
+  return normalizeStore(merged);
 }
 
 function readLocal() {
@@ -173,7 +280,9 @@ function applyRemote(val, { allowPushLocal = false } = {}) {
       cache = local || emptyStore();
       writeLocal(cache);
     }
-    if (allowPushLocal && cache) queueRemoteWrite(cache);
+    if (allowPushLocal && cache && hasUserData(cache)) {
+      queueRemoteWrite(cache);
+    }
     return;
   }
 
@@ -186,15 +295,17 @@ function applyRemote(val, { allowPushLocal = false } = {}) {
     return;
   }
 
-  const preferred = pickPreferred(next, local);
-  const usedLocal =
-    preferred === local && local && preferred !== next;
+  const merged = mergeStores(next, local);
+  const shouldPush =
+    allowPushLocal &&
+    local &&
+    merged.updated_at !== next.updated_at;
 
-  cache = preferred;
+  cache = merged;
   writeLocal(cache);
   remoteReady = true;
 
-  if (usedLocal && allowPushLocal) {
+  if (shouldPush) {
     queueRemoteWrite(cache);
   }
 }
