@@ -448,8 +448,8 @@ function SyncBadge() {
   );
 }
 
-function UpcomingStrip({ posts, onOpenPost, onOpenWeek }) {
-  const { todayList, tomorrowList } = useMemo(() => {
+function UpcomingStrip({ posts, onOpenToday, onOpenTomorrow, onOpenWeek }) {
+  const { todayCount, tomorrowCount, nextToday } = useMemo(() => {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const tomorrow = addDaysDate(today, 1);
@@ -460,80 +460,42 @@ function UpcomingStrip({ posts, onOpenPost, onOpenWeek }) {
     const tomorrowList = list.filter((p) =>
       sameDay(new Date(p.publish_at), tomorrow)
     );
-    return { todayList, tomorrowList };
+    return {
+      todayCount: todayList.length,
+      tomorrowCount: tomorrowList.length,
+      nextToday: todayList[0] || null,
+    };
   }, [posts]);
 
-  const total = todayList.length + tomorrowList.length;
-
   return (
-    <Group>
-      <Div className="cp-upcoming">
-        <div className="cp-upcoming__head">
-          <div className="cp-upcoming__title">Ближайшие</div>
-          <button type="button" className="cp-upcoming__week" onClick={onOpenWeek}>
-            Эта неделя →
-          </button>
-        </div>
-        {total === 0 ? (
-          <div className="cp-upcoming__empty">На сегодня и завтра слотов нет</div>
-        ) : (
-          <div className="cp-upcoming__cols">
-            <UpcomingDay
-              label="Сегодня"
-              count={todayList.length}
-              items={todayList}
-              onOpenPost={onOpenPost}
-            />
-            <UpcomingDay
-              label="Завтра"
-              count={tomorrowList.length}
-              items={tomorrowList}
-              onOpenPost={onOpenPost}
-            />
-          </div>
+    <Div className="cp-soon">
+      <button
+        type="button"
+        className={`cp-soon__chip${todayCount ? ' cp-soon__chip--hot' : ''}`}
+        onClick={() => onOpenToday?.(nextToday)}
+      >
+        <span className="cp-soon__label">Сегодня</span>
+        <span className={`cp-soon__count${todayCount ? ' cp-soon__count--on' : ''}`}>
+          {todayCount}
+        </span>
+        {nextToday && (
+          <span className="cp-soon__time">{formatTime(nextToday.publish_at)}</span>
         )}
-      </Div>
-    </Group>
-  );
-}
-
-function UpcomingDay({ label, count, items, onOpenPost }) {
-  return (
-    <div className="cp-upcoming__day">
-      <div className="cp-upcoming__day-head">
-        <span>{label}</span>
-        {count > 0 && <span className="cp-upcoming__badge">{count}</span>}
-      </div>
-      {items.length === 0 ? (
-        <div className="cp-upcoming__none">—</div>
-      ) : (
-        items.slice(0, 4).map((p) => {
-          const meta = KIND_MAP[p.kind] || KIND_MAP.post;
-          return (
-            <button
-              key={p.id}
-              type="button"
-              className="cp-upcoming__item"
-              onClick={() => onOpenPost?.(p)}
-            >
-              <span
-                className="cp-upcoming__dot"
-                style={{ background: pillColor(p) }}
-              />
-              <span className="cp-upcoming__time">{formatTime(p.publish_at)}</span>
-              <span className="cp-upcoming__kind">{meta.short}</span>
-              <NetBadge network={p.network} size="sm" />
-              <span className="cp-upcoming__text">
-                {(p.text || '').trim() || '(без текста)'}
-              </span>
-            </button>
-          );
-        })
-      )}
-      {items.length > 4 && (
-        <div className="cp-upcoming__more">ещё {items.length - 4}</div>
-      )}
-    </div>
+      </button>
+      <button
+        type="button"
+        className="cp-soon__chip"
+        onClick={() => onOpenTomorrow?.()}
+      >
+        <span className="cp-soon__label">Завтра</span>
+        <span className={`cp-soon__count${tomorrowCount ? ' cp-soon__count--on' : ''}`}>
+          {tomorrowCount}
+        </span>
+      </button>
+      <button type="button" className="cp-soon__chip cp-soon__chip--week" onClick={onOpenWeek}>
+        Неделя
+      </button>
+    </Div>
   );
 }
 
@@ -1376,7 +1338,7 @@ function PostFormBody({
         <FormItem top={isEdit ? 'Текст / идея' : `Текст / идея · ${kindMeta.label}`}>
           <div className="cp-text-toolbar">
             {!isEdit && (
-              <Button size="s" mode="secondary" onClick={() => onPickTemplate?.(category)}>
+              <Button size="s" mode="secondary" onClick={() => onPickTemplate?.()}>
                 Выбрать заготовку
               </Button>
             )}
@@ -2340,13 +2302,9 @@ export default function App() {
     setActivePanel(draft?.returnTo === 'day' && dayFocus ? 'day' : 'main');
   };
 
-  const openTemplates = (selectMode = false, categoryFilter) => {
+  const openTemplates = (selectMode = false) => {
     setTplSelectMode(selectMode);
-    setTplCategory(
-      selectMode && categoryFilter && categoryFilter !== 'Все'
-        ? categoryFilter
-        : 'Все'
-    );
+    setTplCategory('Все');
     setActivePanel('templates');
   };
 
@@ -2427,6 +2385,26 @@ export default function App() {
     });
     setDraft({ post: p, returnTo: 'day' });
     setActivePanel('edit');
+  };
+
+  const openDayByOffset = (offsetDays, preferPost) => {
+    const base = new Date();
+    const d = addDaysDate(
+      new Date(base.getFullYear(), base.getMonth(), base.getDate()),
+      offsetDays
+    );
+    setCursor(startOfMonth(d));
+    setDayFocus({
+      year: d.getFullYear(),
+      month: d.getMonth(),
+      day: d.getDate(),
+    });
+    if (preferPost) {
+      setDraft({ post: preferPost, returnTo: 'day' });
+      setActivePanel('edit');
+    } else {
+      setActivePanel('day');
+    }
   };
 
   const openWeek = () => {
@@ -2554,9 +2532,6 @@ export default function App() {
             after={
               <div className="cp-header-after">
                 <SyncBadge />
-                <PanelHeaderButton onClick={openWeek} aria-label="Неделя">
-                  Нед
-                </PanelHeaderButton>
                 <PanelHeaderButton
                   onClick={() => setCursor((c) => addMonths(c, 1))}
                 >
@@ -2567,12 +2542,6 @@ export default function App() {
           >
             {MONTHS[month]} {year}
           </PanelHeader>
-          <NotifyBanner onEnabled={() => setSnack('Напоминания включены')} />
-          <UpcomingStrip
-            posts={planPosts}
-            onOpenPost={openFromUpcoming}
-            onOpenWeek={openWeek}
-          />
           <Group>
             <MonthGrid
               year={year}
@@ -2583,6 +2552,13 @@ export default function App() {
               onDropPost={dropPost}
             />
           </Group>
+          <UpcomingStrip
+            posts={planPosts}
+            onOpenToday={(post) => openDayByOffset(0, post)}
+            onOpenTomorrow={() => openDayByOffset(1)}
+            onOpenWeek={openWeek}
+          />
+          <NotifyBanner onEnabled={() => setSnack('Напоминания включены')} />
           {snack && activePanel === 'main' && (
             <Snackbar onClose={() => setSnack(null)}>{snack}</Snackbar>
           )}
@@ -2641,7 +2617,7 @@ export default function App() {
               onBack={backFromEdit}
               onSaved={afterSave}
               onDeleted={afterDelete}
-              onPickTemplate={(cat) => openTemplates(true, cat)}
+              onPickTemplate={() => openTemplates(true)}
               onSnack={setSnack}
             />
           )}
