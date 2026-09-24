@@ -89,8 +89,29 @@ const TEMPLATE_CATEGORIES = [
   'Реклама',
   'Юмор',
   'Мотивация',
+  'Система',
   'Другое',
 ];
+
+const PLAN_POSTS_FROM = '2020-01-01T00:00:00.000Z';
+const PLAN_POSTS_TO = '2035-01-01T00:00:00.000Z';
+
+function normText(t) {
+  return String(t || '')
+    .trim()
+    .replace(/\s+/g, ' ');
+}
+
+/** planned = in calendar, placed = already published */
+function templateUsageStatus(text, posts, history) {
+  const key = normText(text);
+  if (!key) return null;
+  if ((history || []).some((h) => normText(h.text) === key)) return 'placed';
+  const matching = (posts || []).filter((p) => normText(p.text) === key);
+  if (matching.some((p) => p.reminded === 1 || p.placed === 1)) return 'placed';
+  if (matching.length) return 'planned';
+  return null;
+}
 
 const KIND_MAP = Object.fromEntries(KINDS.map((k) => [k.value, k]));
 const NETWORK_MAP = Object.fromEntries(NETWORKS.map((n) => [n.value, n]));
@@ -312,6 +333,20 @@ function IconCopy() {
         stroke="currentColor"
         strokeWidth="1.7"
         strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function IconTrash() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M5 7h14M10 7V5.5A1.5 1.5 0 0 1 11.5 4h1A1.5 1.5 0 0 1 14 5.5V7M8.5 7l.7 11.2a1.5 1.5 0 0 0 1.5 1.4h2.6a1.5 1.5 0 0 0 1.5-1.4L15.5 7"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </svg>
   );
@@ -889,6 +924,25 @@ function PostFormBody({ draft, onBack, onSaved, onDeleted, onPickTemplate, onSna
           </div>
         </Div>
 
+        {isEdit && (
+          <Div>
+            <div className={`cp-placed-card${placed ? ' cp-placed-card--on' : ''}`}>
+              <div className="cp-placed-row">
+                <div className="cp-placed-row__text">
+                  <div className="cp-placed-row__title">Размещена</div>
+                  <div className="cp-placed-row__hint">
+                    Отметьте после публикации в соцсети
+                  </div>
+                </div>
+                <Switch
+                  checked={placed}
+                  onChange={(e) => setPlaced(e.target.checked)}
+                />
+              </div>
+            </div>
+          </Div>
+        )}
+
         {!isEdit && (
           <>
             <FormItem top="Тип публикации">
@@ -936,7 +990,7 @@ function PostFormBody({ draft, onBack, onSaved, onDeleted, onPickTemplate, onSna
         )}
 
         <FormItem top="Тематика">
-          <div className="cp-tpl-chips">
+          <div className="cp-tpl-chips cp-tpl-chips--scroll">
             {TEMPLATE_CATEGORIES.map((c) => (
               <button
                 key={c}
@@ -999,23 +1053,6 @@ function PostFormBody({ draft, onBack, onSaved, onDeleted, onPickTemplate, onSna
             </div>
           </div>
         </FormItem>
-
-        {isEdit && (
-          <FormItem top="Статус размещения">
-            <div className="cp-placed-row">
-              <div className="cp-placed-row__text">
-                <div className="cp-placed-row__title">Размещена</div>
-                <div className="cp-placed-row__hint">
-                  Отметьте вручную после публикации в соцсети
-                </div>
-              </div>
-              <Switch
-                checked={placed}
-                onChange={(e) => setPlaced(e.target.checked)}
-              />
-            </div>
-          </FormItem>
-        )}
       </Group>
 
       <Group>
@@ -1064,10 +1101,11 @@ function PostFormBody({ draft, onBack, onSaved, onDeleted, onPickTemplate, onSna
   );
 }
 
-function HistoryDetailBody({ entry, onSnack }) {
+function HistoryDetailBody({ entry, onSnack, onDeleted }) {
   const meta = KIND_MAP[entry.kind] || KIND_MAP.post;
   const net = NETWORK_MAP[entry.network] || NETWORK_MAP.vk;
   const [copyBusy, setCopyBusy] = useState(false);
+  const [busy, setBusy] = useState(false);
 
   const copyText = async () => {
     const payload = (entry.text || '').trim();
@@ -1084,6 +1122,19 @@ function HistoryDetailBody({ entry, onSnack }) {
       onSnack?.('Не удалось скопировать');
     } finally {
       setCopyBusy(false);
+    }
+  };
+
+  const remove = async () => {
+    setBusy(true);
+    try {
+      await api(`/api/history/${entry.id}`, { method: 'DELETE' });
+      onDeleted?.();
+    } catch (e) {
+      console.error(e);
+      onSnack?.('Не удалось удалить');
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -1147,6 +1198,23 @@ function HistoryDetailBody({ entry, onSnack }) {
             Скопировать текст
           </Button>
         </Div>
+        <Div>
+          <Button
+            size="l"
+            stretched
+            mode="secondary"
+            appearance="negative"
+            disabled={busy}
+            onClick={remove}
+            before={
+              <span className="cp-btn-ico" aria-hidden="true">
+                <IconTrash />
+              </span>
+            }
+          >
+            Удалить из истории
+          </Button>
+        </Div>
       </Group>
     </div>
   );
@@ -1159,6 +1227,9 @@ function TemplatesList({
   onSelect,
   selectMode,
   onEdit,
+  onQuickDelete,
+  posts,
+  history,
 }) {
   const cats = useMemo(() => {
     const set = new Set(TEMPLATE_CATEGORIES);
@@ -1174,7 +1245,7 @@ function TemplatesList({
   return (
     <div className="cp-form-block">
       <Div style={{ paddingBottom: 0 }}>
-        <div className="cp-tpl-chips">
+        <div className="cp-tpl-chips cp-tpl-chips--scroll">
           {cats.map((c) => (
             <button
               key={c}
@@ -1193,17 +1264,57 @@ function TemplatesList({
             Добавьте тексты по тематикам — они появятся здесь
           </Placeholder>
         ) : (
-          filtered.map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              className="cp-tpl-card"
-              onClick={() => (selectMode ? onSelect(t) : onEdit(t))}
-            >
-              <div className="cp-tpl-card__cat">{t.category}</div>
-              <div className="cp-tpl-card__text">{t.text}</div>
-            </button>
-          ))
+          filtered.map((t) => {
+            const status = templateUsageStatus(t.text, posts, history);
+            const statusLabel =
+              status === 'placed'
+                ? 'Размещена'
+                : status === 'planned'
+                  ? 'В плане'
+                  : null;
+            return (
+              <div
+                key={t.id}
+                className={`cp-tpl-card${status === 'planned' ? ' cp-tpl-card--planned' : ''}${status === 'placed' ? ' cp-tpl-card--placed' : ''}`}
+              >
+                <button
+                  type="button"
+                  className="cp-tpl-card__main"
+                  onClick={() => (selectMode ? onSelect(t) : onEdit(t))}
+                >
+                  <div className="cp-tpl-card__top">
+                    <div className="cp-tpl-card__cat">{t.category}</div>
+                    {statusLabel && (
+                      <span
+                        className={`cp-tpl-badge cp-tpl-badge--${status}`}
+                      >
+                        {statusLabel}
+                      </span>
+                    )}
+                  </div>
+                  <div
+                    className={`cp-tpl-card__text${status === 'placed' ? ' cp-tpl-card__text--done' : ''}`}
+                  >
+                    {t.text}
+                  </div>
+                </button>
+                {status === 'placed' && !selectMode && (
+                  <button
+                    type="button"
+                    className="cp-icon-btn cp-icon-btn--danger"
+                    aria-label="Удалить заготовку"
+                    title="Удалить из заготовок"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onQuickDelete?.(t);
+                    }}
+                  >
+                    <IconTrash />
+                  </button>
+                )}
+              </div>
+            );
+          })
         )}
       </Group>
     </div>
@@ -1252,7 +1363,7 @@ function TemplateFormBody({ draft, onBack, onSaved, onDeleted }) {
     <div className="cp-form-block">
       <Group>
         <FormItem top="Тематика">
-          <div className="cp-tpl-chips">
+          <div className="cp-tpl-chips cp-tpl-chips--scroll">
             {TEMPLATE_CATEGORIES.map((c) => (
               <button
                 key={c}
@@ -1308,6 +1419,7 @@ export default function App() {
   const [cursor, setCursor] = useState(() => startOfMonth(new Date()));
   const [posts, setPosts] = useState([]);
   const [templates, setTemplates] = useState([]);
+  const [planPosts, setPlanPosts] = useState([]);
   const [activePanel, setActivePanel] = useState('main');
   const [dayFocus, setDayFocus] = useState(null);
   const [draft, setDraft] = useState(null);
@@ -1348,6 +1460,17 @@ export default function App() {
     }
   }, []);
 
+  const loadPlanPosts = useCallback(async () => {
+    try {
+      const data = await api(
+        `/api/posts?from=${encodeURIComponent(PLAN_POSTS_FROM)}&to=${encodeURIComponent(PLAN_POSTS_TO)}`
+      );
+      setPlanPosts(data);
+    } catch (e) {
+      console.error(e);
+    }
+  }, []);
+
   const loadHistory = useCallback(async () => {
     try {
       const data = await api('/api/history');
@@ -1363,7 +1486,8 @@ export default function App() {
 
   useEffect(() => {
     loadTemplates();
-  }, [loadTemplates]);
+    loadPlanPosts();
+  }, [loadTemplates, loadPlanPosts]);
 
   useEffect(() => {
     loadHistory();
@@ -1375,6 +1499,7 @@ export default function App() {
     if (STATIC) {
       return subscribeStore(() => {
         loadPosts();
+        loadPlanPosts();
         loadTemplates();
         loadHistory();
       });
@@ -1382,6 +1507,7 @@ export default function App() {
     // Local Express API: poll so another open client sees changes
     const id = setInterval(() => {
       loadPosts();
+      loadPlanPosts();
       if (activePanel === 'history' || activePanel === 'history-detail') {
         loadHistory();
       }
@@ -1390,7 +1516,7 @@ export default function App() {
       }
     }, 4000);
     return () => clearInterval(id);
-  }, [loadPosts, loadTemplates, loadHistory, activePanel]);
+  }, [loadPosts, loadPlanPosts, loadTemplates, loadHistory, activePanel]);
 
   useEffect(() => {
     (async () => {
@@ -1471,6 +1597,7 @@ export default function App() {
     }
     setSnack('Перенесено');
     setActivePanel('day');
+    loadPlanPosts();
   };
 
   const dropPost = async (id, y, m, d) => {
@@ -1497,6 +1624,7 @@ export default function App() {
         }),
       });
       await loadPosts();
+      await loadPlanPosts();
       setSnack('Перенесено');
     } catch (e) {
       console.error(e);
@@ -1550,14 +1678,42 @@ export default function App() {
 
   const afterSave = () => {
     loadPosts();
+    loadPlanPosts();
     loadHistory();
     setSnack('Сохранено');
   };
 
   const afterDelete = () => {
     loadPosts();
+    loadPlanPosts();
     loadHistory();
     setSnack('Удалено');
+  };
+
+  const quickDeleteTemplate = async (t) => {
+    try {
+      await api(`/api/templates/${t.id}`, { method: 'DELETE' });
+      await loadTemplates();
+      setSnack('Заготовка удалена');
+    } catch (e) {
+      console.error(e);
+      setSnack('Не удалось удалить');
+    }
+  };
+
+  const deleteHistoryEntry = async (h) => {
+    try {
+      await api(`/api/history/${h.id}`, { method: 'DELETE' });
+      await loadHistory();
+      if (historyFocus?.id === h.id) {
+        setHistoryFocus(null);
+        setActivePanel('history');
+      }
+      setSnack('Удалено из истории');
+    } catch (e) {
+      console.error(e);
+      setSnack('Не удалось удалить');
+    }
   };
 
   const editTitle = draft?.post?.id ? 'Редактировать' : 'Новая публикация';
@@ -1743,21 +1899,35 @@ export default function App() {
                 const meta = KIND_MAP[h.kind] || KIND_MAP.post;
                 const net = NETWORK_MAP[h.network] || NETWORK_MAP.vk;
                 return (
-                  <button
-                    key={h.id}
-                    type="button"
-                    className="cp-tpl-card"
-                    onClick={() => openHistoryDetail(h)}
-                  >
-                    <div className="cp-tpl-card__cat">
-                      {meta.label} · {net.label} · {h.category || 'Другое'} ·{' '}
-                      {formatDateTime(h.placed_at)}
-                    </div>
-                    <div className="cp-tpl-card__text">
-                      {h.text?.trim() || '(без текста)'}
-                    </div>
-                    <div className="cp-tpl-card__more">Открыть →</div>
-                  </button>
+                  <div key={h.id} className="cp-tpl-card cp-history-card">
+                    <button
+                      type="button"
+                      className="cp-tpl-card__main"
+                      onClick={() => openHistoryDetail(h)}
+                    >
+                      <div className="cp-tpl-card__cat">
+                        {meta.label} · {net.label} · {h.category || 'Другое'}
+                      </div>
+                      <div className="cp-tpl-card__text">
+                        {h.text?.trim() || '(без текста)'}
+                      </div>
+                      <div className="cp-tpl-card__more">
+                        {formatDateTime(h.placed_at)} · Открыть →
+                      </div>
+                    </button>
+                    <button
+                      type="button"
+                      className="cp-icon-btn cp-icon-btn--danger"
+                      aria-label="Удалить из истории"
+                      title="Удалить из истории"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteHistoryEntry(h);
+                      }}
+                    >
+                      <IconTrash />
+                    </button>
+                  </div>
                 );
               })
             )}
@@ -1778,6 +1948,12 @@ export default function App() {
               key={historyFocus.id}
               entry={historyFocus}
               onSnack={setSnack}
+              onDeleted={() => {
+                loadHistory();
+                setHistoryFocus(null);
+                setActivePanel('history');
+                setSnack('Удалено из истории');
+              }}
             />
           )}
           {snack && activePanel === 'history-detail' && (
@@ -1811,6 +1987,9 @@ export default function App() {
             selectMode={tplSelectMode}
             onSelect={pickTemplate}
             onEdit={openTplEdit}
+            onQuickDelete={quickDeleteTemplate}
+            posts={planPosts}
+            history={history}
           />
           {snack && activePanel === 'templates' && (
             <Snackbar onClose={() => setSnack(null)}>{snack}</Snackbar>

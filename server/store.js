@@ -220,5 +220,12 @@ export function createStore(rootDir) {
         (b.placed_at || '').localeCompare(a.placed_at || '')
       );
     },
+    deleteHistory(id) {
+      return update((s) => {
+        const before = s.history.length;
+        s.history = s.history.filter((h) => h.id !== Number(id));
+        return s.history.length < before;
+      });
+    },
   };
 }

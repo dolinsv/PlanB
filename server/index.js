@@ -107,6 +107,13 @@ app.get('/api/history', (_req, res) => {
   res.json(store.getHistory());
 });
 
+app.delete('/api/history/:id', (req, res) => {
+  if (!store.deleteHistory(req.params.id)) {
+    return res.status(404).json({ error: 'history not found' });
+  }
+  res.json({ ok: true });
+});
+
 const dist = join(root, 'dist');
 if (existsSync(dist)) {
   app.use(express.static(dist));

@@ -174,5 +174,16 @@ export async function localApi(path, options = {}) {
     );
   }
 
+  const histDel = pathname.match(/^\/api\/history\/(\d+)$/);
+  if (method === 'DELETE' && histDel) {
+    const id = Number(histDel[1]);
+    return saveStore((s) => {
+      const before = s.history.length;
+      s.history = s.history.filter((h) => h.id !== id);
+      if (s.history.length === before) fail('history not found', 404);
+      return { ok: true };
+    });
+  }
+
   fail('not found', 404);
 }
