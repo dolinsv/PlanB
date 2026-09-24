@@ -1104,6 +1104,111 @@ body {
   margin-bottom: 10px;
 }
 
+.cp-post-source {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 4px !important;
+  padding-bottom: 8px !important;
+}
+
+.cp-post-source__main {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  width: 100%;
+  margin: 0;
+  padding: 16px 16px 14px;
+  border: 1.5px solid color-mix(in srgb, var(--vkui--color_stroke_accent) 45%, var(--vkui--color_field_border_alpha));
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--vkui--color_background_accent) 7%, var(--vkui--color_background_content));
+  color: var(--vkui--color_text_accent);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.cp-post-source__main:active {
+  transform: scale(0.99);
+}
+
+.cp-post-source__ico {
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+  margin-bottom: 4px;
+  color: var(--vkui--color_text_accent);
+}
+
+.cp-post-source__ico svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.cp-post-source__title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--vkui--color_text_primary);
+}
+
+.cp-post-source__hint {
+  font-size: 13px;
+  color: var(--vkui--color_text_secondary);
+  font-weight: 450;
+}
+
+.cp-post-source__alt {
+  border: 0;
+  background: none;
+  padding: 4px 2px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--vkui--color_text_accent);
+  cursor: pointer;
+  align-self: center;
+}
+
+.cp-post-from {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding-top: 2px !important;
+  padding-bottom: 2px !important;
+}
+
+.cp-post-from__pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 650;
+  color: #fff;
+  background: var(--vkui--color_background_accent);
+}
+
+.cp-post-from__label {
+  font-size: 12px;
+  color: var(--vkui--color_text_secondary);
+}
+
+.cp-post-from__change {
+  margin-left: auto;
+  border: 0;
+  background: none;
+  padding: 4px 0;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--vkui--color_text_accent);
+  cursor: pointer;
+}
+
 .cp-btn-ico {
   display: inline-flex;
   width: 16px;

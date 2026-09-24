@@ -1139,10 +1139,17 @@ function PostFormBody({
   const [busy, setBusy] = useState(false);
   const [copyBusy, setCopyBusy] = useState(false);
   const [placed, setPlaced] = useState(draft?.post?.reminded === 1);
+  // create flow: null = pick source, 'template' | 'custom'
+  const [contentMode, setContentMode] = useState(() => {
+    if (isEdit) return 'custom';
+    if (draft?.presetText) return 'template';
+    return null;
+  });
 
   useEffect(() => {
     if (draft?.presetText != null) {
       setText(draft.presetText);
+      setContentMode('template');
     }
   }, [draft?.presetText]);
 
@@ -1166,6 +1173,10 @@ function PostFormBody({
   };
 
   const save = async () => {
+    if (!text.trim()) {
+      onSnack?.('Добавьте текст или выберите заготовку');
+      return;
+    }
     setBusy(true);
     try {
       const body = {
@@ -1221,12 +1232,26 @@ function PostFormBody({
     }
   };
 
+  const startCustom = () => {
+    setContentMode('custom');
+    if (!text.trim()) setCategory('Другое');
+  };
+
+  const clearContent = () => {
+    setText('');
+    setCategory('Другое');
+    setContentMode(null);
+  };
+
   const placeholder =
     kind === 'clip'
       ? 'О чём клип?'
       : kind === 'story'
         ? 'О чём сторис?'
         : 'О чём пост?';
+
+  const showContentEditor = isEdit || contentMode != null;
+  const fromTemplate = !isEdit && contentMode === 'template';
 
   return (
     <div className="cp-form-block cp-post-form">
@@ -1272,85 +1297,202 @@ function PostFormBody({
           </Div>
         )}
 
-        {!isEdit && (
-          <>
-            <FormItem top="Тип публикации">
-              <div className="cp-kind-pick" role="tablist" aria-label="Тип публикации">
-                {KINDS.map((k) => (
-                  <button
-                    key={k.value}
-                    type="button"
-                    role="tab"
-                    aria-selected={kind === k.value}
-                    className={`cp-kind-pick__item${kind === k.value ? ' cp-kind-pick__item--active' : ''}`}
-                    style={
-                      kind === k.value
-                        ? { '--cp-kind-color': k.color }
-                        : undefined
-                    }
-                    onClick={() => setKind(k.value)}
-                  >
-                    <span
-                      className="cp-kind-pick__dot"
-                      style={{ background: k.color }}
-                      aria-hidden="true"
-                    />
-                    {k.label}
-                  </button>
-                ))}
-              </div>
-            </FormItem>
+        {!isEdit && contentMode == null && (
+          <Div className="cp-post-source">
+            <button
+              type="button"
+              className="cp-post-source__main"
+              onClick={() => onPickTemplate?.()}
+            >
+              <span className="cp-post-source__ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M7 4h10a2 2 0 0 1 2 2v14l-3.2-2H7a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M9 9h6M9 12.5h6"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              </span>
+              <span className="cp-post-source__title">Выбрать заготовку</span>
+              <span className="cp-post-source__hint">
+                Тематика и текст подтянутся автоматически
+              </span>
+            </button>
+            <button
+              type="button"
+              className="cp-post-source__alt"
+              onClick={startCustom}
+            >
+              Или написать свой текст
+            </button>
+          </Div>
+        )}
 
-            <FormItem top="Соцсеть">
-              <div className="cp-net-pick">
-                {NETWORKS.map((n) => {
-                  const active = network === n.value;
-                  const isIg = n.value === 'instagram';
-                  return (
+        {showContentEditor && (
+          <>
+            {!isEdit && fromTemplate && (
+              <Div className="cp-post-from">
+                <span className="cp-post-from__pill">{category || 'Другое'}</span>
+                <span className="cp-post-from__label">из заготовки</span>
+                <button
+                  type="button"
+                  className="cp-post-from__change"
+                  onClick={() => onPickTemplate?.()}
+                >
+                  Сменить
+                </button>
+              </Div>
+            )}
+
+            {(isEdit || contentMode === 'custom') && (
+              <FormItem top="Тематика">
+                <div className="cp-tpl-filter" role="listbox" aria-label="Тематика">
+                  {themeList.map((c) => (
                     <button
-                      key={n.value}
+                      key={c}
                       type="button"
-                      className={`cp-net-card cp-net-card--${isIg ? 'ig' : 'vk'}${active ? ' cp-net-card--active' : ''}`}
-                      onClick={() => setNetwork(n.value)}
+                      className={`cp-tpl-filter__item${category === c ? ' cp-tpl-filter__item--active' : ''}`}
+                      onClick={() => setCategory(c)}
                     >
-                      <span
-                        className={`cp-net-card__icon cp-net-card__icon--${isIg ? 'ig' : 'vk'}`}
-                      >
-                        <NetIcon network={n.value} />
-                      </span>
-                      <span className="cp-net-card__label">{n.label}</span>
+                      {c}
                     </button>
-                  );
-                })}
+                  ))}
+                </div>
+              </FormItem>
+            )}
+
+            <FormItem top={isEdit ? 'Текст' : fromTemplate ? 'Текст · можно подправить' : 'Текст'}>
+              <div className="cp-text-toolbar">
+                {!isEdit && (
+                  <>
+                    {contentMode === 'custom' && (
+                      <Button size="s" mode="secondary" onClick={() => onPickTemplate?.()}>
+                        Из заготовки
+                      </Button>
+                    )}
+                    <Button size="s" mode="secondary" onClick={clearContent}>
+                      Сбросить
+                    </Button>
+                  </>
+                )}
+                <Button
+                  size="s"
+                  mode="secondary"
+                  disabled={copyBusy || !text.trim()}
+                  onClick={copyText}
+                  before={
+                    <span className="cp-btn-ico" aria-hidden="true">
+                      <IconCopy />
+                    </span>
+                  }
+                >
+                  Скопировать
+                </Button>
               </div>
+              <Textarea
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                placeholder={placeholder}
+              />
             </FormItem>
           </>
         )}
 
-        <FormItem top="Тематика">
-          <div className="cp-tpl-filter" role="listbox" aria-label="Тематика">
-            {themeList.map((c) => (
-              <button
-                key={c}
-                type="button"
-                className={`cp-tpl-filter__item${category === c ? ' cp-tpl-filter__item--active' : ''}`}
-                onClick={() => setCategory(c)}
-              >
-                {c}
-              </button>
-            ))}
-          </div>
-        </FormItem>
-
-        <FormItem top={isEdit ? 'Текст / идея' : `Текст / идея · ${kindMeta.label}`}>
-          <div className="cp-text-toolbar">
+        {(isEdit || showContentEditor) && (
+          <>
             {!isEdit && (
-              <Button size="s" mode="secondary" onClick={() => onPickTemplate?.()}>
-                Выбрать заготовку
-              </Button>
+              <>
+                <FormItem top="Тип публикации">
+                  <div className="cp-kind-pick" role="tablist" aria-label="Тип публикации">
+                    {KINDS.map((k) => (
+                      <button
+                        key={k.value}
+                        type="button"
+                        role="tab"
+                        aria-selected={kind === k.value}
+                        className={`cp-kind-pick__item${kind === k.value ? ' cp-kind-pick__item--active' : ''}`}
+                        style={
+                          kind === k.value
+                            ? { '--cp-kind-color': k.color }
+                            : undefined
+                        }
+                        onClick={() => setKind(k.value)}
+                      >
+                        <span
+                          className="cp-kind-pick__dot"
+                          style={{ background: k.color }}
+                          aria-hidden="true"
+                        />
+                        {k.label}
+                      </button>
+                    ))}
+                  </div>
+                </FormItem>
+
+                <FormItem top="Соцсеть">
+                  <div className="cp-net-pick">
+                    {NETWORKS.map((n) => {
+                      const active = network === n.value;
+                      const isIg = n.value === 'instagram';
+                      return (
+                        <button
+                          key={n.value}
+                          type="button"
+                          className={`cp-net-card cp-net-card--${isIg ? 'ig' : 'vk'}${active ? ' cp-net-card--active' : ''}`}
+                          onClick={() => setNetwork(n.value)}
+                        >
+                          <span
+                            className={`cp-net-card__icon cp-net-card__icon--${isIg ? 'ig' : 'vk'}`}
+                          >
+                            <NetIcon network={n.value} />
+                          </span>
+                          <span className="cp-net-card__label">{n.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </FormItem>
+              </>
             )}
+
+            <FormItem top="Когда публиковать">
+              <div className="cp-when">
+                <div className="cp-when__field">
+                  <div className="cp-when__label">Дата</div>
+                  <Input
+                    type="date"
+                    value={datePart}
+                    onChange={(e) => setDatePart(e.target.value)}
+                  />
+                </div>
+                <div className="cp-when__field">
+                  <div className="cp-when__label">Время</div>
+                  <Input
+                    type="time"
+                    value={timePart}
+                    step={300}
+                    onChange={(e) => setTimePart(e.target.value)}
+                  />
+                </div>
+              </div>
+            </FormItem>
+          </>
+        )}
+      </Group>
+
+      {showContentEditor && (
+        <Group>
+          <Div>
             <Button
-              size="s"
+              size="l"
+              stretched
               mode="secondary"
               disabled={copyBusy || !text.trim()}
               onClick={copyText}
@@ -1360,81 +1502,35 @@ function PostFormBody({
                 </span>
               }
             >
-              Скопировать
+              Скопировать текст для соцсети
             </Button>
-          </div>
-          <Textarea
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            placeholder={placeholder}
-          />
-        </FormItem>
-
-        <FormItem top="Когда публиковать">
-          <div className="cp-when">
-            <div className="cp-when__field">
-              <div className="cp-when__label">Дата</div>
-              <Input
-                type="date"
-                value={datePart}
-                onChange={(e) => setDatePart(e.target.value)}
-              />
-            </div>
-            <div className="cp-when__field">
-              <div className="cp-when__label">Время</div>
-              <Input
-                type="time"
-                value={timePart}
-                step={300}
-                onChange={(e) => setTimePart(e.target.value)}
-              />
-            </div>
-          </div>
-        </FormItem>
-      </Group>
-
-      <Group>
-        <Div>
-          <Button
-            size="l"
-            stretched
-            mode="secondary"
-            disabled={copyBusy || !text.trim()}
-            onClick={copyText}
-            before={
-              <span className="cp-btn-ico" aria-hidden="true">
-                <IconCopy />
-              </span>
-            }
-          >
-            Скопировать текст для соцсети
-          </Button>
-        </Div>
-        <Div>
-          <Button
-            size="l"
-            stretched
-            disabled={busy || !datePart || !timePart}
-            onClick={save}
-          >
-            Сохранить {kindMeta.label.toLowerCase()}
-          </Button>
-        </Div>
-        {isEdit && (
+          </Div>
           <Div>
             <Button
               size="l"
               stretched
-              mode="secondary"
-              appearance="negative"
-              disabled={busy}
-              onClick={remove}
+              disabled={busy || !text.trim() || !datePart || !timePart}
+              onClick={save}
             >
-              Удалить
+              Сохранить {kindMeta.label.toLowerCase()}
             </Button>
           </Div>
-        )}
-      </Group>
+          {isEdit && (
+            <Div>
+              <Button
+                size="l"
+                stretched
+                mode="secondary"
+                appearance="negative"
+                disabled={busy}
+                onClick={remove}
+              >
+                Удалить
+              </Button>
+            </Div>
+          )}
+        </Group>
+      )}
     </div>
   );
 }
