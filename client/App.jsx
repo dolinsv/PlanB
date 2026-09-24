@@ -1518,6 +1518,28 @@ function PostFormBody({
           </div>
         </FormItem>
 
+        <FormItem className="cp-when-item" top="Когда">
+          <div className="cp-when">
+            <div className="cp-when__field">
+              <div className="cp-when__label">Дата</div>
+              <Input
+                type="date"
+                value={datePart}
+                onChange={(e) => setDatePart(e.target.value)}
+              />
+            </div>
+            <div className="cp-when__field">
+              <div className="cp-when__label">Время</div>
+              <Input
+                type="time"
+                value={timePart}
+                step={300}
+                onChange={(e) => setTimePart(e.target.value)}
+              />
+            </div>
+          </div>
+        </FormItem>
+
         {!isEdit && contentMode == null && (
           <Div className="cp-post-source">
             <button
@@ -1589,28 +1611,6 @@ function PostFormBody({
               </FormItem>
             )}
 
-            <FormItem className="cp-when-item" top="Когда">
-              <div className="cp-when">
-                <div className="cp-when__field">
-                  <div className="cp-when__label">Дата</div>
-                  <Input
-                    type="date"
-                    value={datePart}
-                    onChange={(e) => setDatePart(e.target.value)}
-                  />
-                </div>
-                <div className="cp-when__field">
-                  <div className="cp-when__label">Время</div>
-                  <Input
-                    type="time"
-                    value={timePart}
-                    step={300}
-                    onChange={(e) => setTimePart(e.target.value)}
-                  />
-                </div>
-              </div>
-            </FormItem>
-
             <FormItem top={isEdit ? 'Текст' : fromTemplate ? 'Текст · можно подправить' : 'Текст'}>
               <div className="cp-text-toolbar">
                 {!isEdit && (
@@ -1651,30 +1651,6 @@ function PostFormBody({
               </div>
             </FormItem>
           </>
-        )}
-
-        {!showContentEditor && (
-          <FormItem className="cp-when-item" top="Когда">
-            <div className="cp-when">
-              <div className="cp-when__field">
-                <div className="cp-when__label">Дата</div>
-                <Input
-                  type="date"
-                  value={datePart}
-                  onChange={(e) => setDatePart(e.target.value)}
-                />
-              </div>
-              <div className="cp-when__field">
-                <div className="cp-when__label">Время</div>
-                <Input
-                  type="time"
-                  value={timePart}
-                  step={300}
-                  onChange={(e) => setTimePart(e.target.value)}
-                />
-              </div>
-            </div>
-          </FormItem>
         )}
       </Group>
 
