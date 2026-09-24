@@ -187,6 +187,51 @@ function formatTime(iso) {
   return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
 }
 
+function isPastCalendarDay(year, month, day) {
+  const today = new Date();
+  const t0 = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const d0 = new Date(year, month, day);
+  return d0 < t0;
+}
+
+function toDisplayDate(ymd) {
+  if (!ymd || ymd.length < 10) return '';
+  const [y, m, d] = ymd.split('-');
+  return `${d}/${m}/${String(y).slice(-2)}`;
+}
+
+function fromDisplayDate(str) {
+  const m = String(str || '')
+    .trim()
+    .match(/^(\d{1,2})[/.-](\d{1,2})[/.-](\d{2}|\d{4})$/);
+  if (!m) return null;
+  let year = Number(m[3]);
+  if (m[3].length === 2) year += year >= 70 ? 1900 : 2000;
+  const day = Number(m[1]);
+  const month = Number(m[2]);
+  if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+  const dt = new Date(year, month - 1, day);
+  if (
+    dt.getFullYear() !== year ||
+    dt.getMonth() !== month - 1 ||
+    dt.getDate() !== day
+  ) {
+    return null;
+  }
+  return `${year}-${pad2(month)}-${pad2(day)}`;
+}
+
+function normalizeTimeInput(str) {
+  const m = String(str || '')
+    .trim()
+    .match(/^(\d{1,2}):(\d{2})$/);
+  if (!m) return null;
+  const h = Number(m[1]);
+  const min = Number(m[2]);
+  if (h > 23 || min > 59) return null;
+  return `${pad2(h)}:${pad2(min)}`;
+}
+
 function dayKey(year, month, day) {
   return `${year}-${pad2(month + 1)}-${pad2(day)}`;
 }
@@ -875,10 +920,11 @@ function formatDateTime(iso) {
   if (!iso) return '—';
   return new Date(iso).toLocaleString('ru-RU', {
     day: '2-digit',
-    month: 'short',
-    year: 'numeric',
+    month: '2-digit',
+    year: '2-digit',
     hour: '2-digit',
     minute: '2-digit',
+    hour12: false,
   });
 }
 
@@ -1034,7 +1080,7 @@ function MonthGrid({
           <span style={{ textDecoration: 'line-through', opacity: 0.7 }}>
             П 10:00
           </span>
-          Разместили
+          Размещено
         </span>
       </div>
       {!compact && (
@@ -1046,7 +1092,17 @@ function MonthGrid({
   );
 }
 
-function DayPanelBody({ year, month, day, posts, onAdd, onEdit, onMove, onDelete }) {
+function DayPanelBody({
+  year,
+  month,
+  day,
+  posts,
+  onAdd,
+  onEdit,
+  onMove,
+  onDelete,
+}) {
+  const past = isPastCalendarDay(year, month, day);
   return (
     <>
       <Group>
@@ -1056,7 +1112,9 @@ function DayPanelBody({ year, month, day, posts, onAdd, onEdit, onMove, onDelete
             <div className="cp-day-hero__meta">
               {posts.length
                 ? `${posts.length} публикац${posts.length === 1 ? 'ия' : posts.length < 5 ? 'ии' : 'ий'}`
-                : 'Пока пусто — добавьте первую'}
+                : past
+                  ? 'Прошедший день — только просмотр'
+                  : 'Пока пусто — добавьте первую'}
             </div>
           </div>
         </Div>
@@ -1068,21 +1126,25 @@ function DayPanelBody({ year, month, day, posts, onAdd, onEdit, onMove, onDelete
             <div className="cp-day-empty">
               <div className="cp-day-empty__title">Нет публикаций</div>
               <div className="cp-day-empty__hint">
-                Пост, клип или сторис — для VK и Instagram
+                {past
+                  ? 'Нельзя создавать публикации в прошлом'
+                  : 'Пост, клип или сторис — для VK и Instagram'}
               </div>
-              <button type="button" className="cp-add-tpl" onClick={onAdd}>
-                <span className="cp-add-tpl__ico" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" fill="none">
-                    <path
-                      d="M12 5v14M5 12h14"
-                      stroke="currentColor"
-                      strokeWidth="2.2"
-                      strokeLinecap="round"
-                    />
-                  </svg>
-                </span>
-                <span className="cp-add-tpl__label">Добавить публикацию</span>
-              </button>
+              {!past && (
+                <button type="button" className="cp-add-tpl" onClick={onAdd}>
+                  <span className="cp-add-tpl__ico" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none">
+                      <path
+                        d="M12 5v14M5 12h14"
+                        stroke="currentColor"
+                        strokeWidth="2.2"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                  </span>
+                  <span className="cp-add-tpl__label">Добавить публикацию</span>
+                </button>
+              )}
             </div>
           </Div>
         ) : (
@@ -1127,7 +1189,7 @@ function DayPanelBody({ year, month, day, posts, onAdd, onEdit, onMove, onDelete
                     </div>
                     <div className="cp-day-row__meta">
                       {meta.label} · {net.label} · {p.category || 'Другое'} ·{' '}
-                      {done ? 'разместили' : 'ожидает'}
+                      {done ? 'размещено' : 'ожидает'}
                     </div>
                   </button>
                   <div className="cp-day-row__aside">
@@ -1166,7 +1228,7 @@ function DayPanelBody({ year, month, day, posts, onAdd, onEdit, onMove, onDelete
             })}
           </div>
         )}
-        {posts.length > 0 && (
+        {posts.length > 0 && !past && (
           <Div>
             <button
               type="button"
@@ -1201,11 +1263,14 @@ function MoveFormBody({ post, onMoved }) {
     { label: '+2 дня', date: addDaysLocal(today, 2) },
     { label: '+1 неделя', date: addDaysLocal(today, 7) },
   ];
-  const [dateVal, setDateVal] = useState(toDateInputValue(current));
+  const initialYmd = toDateInputValue(current);
+  const [dateVal, setDateVal] = useState(initialYmd);
+  const [dateText, setDateText] = useState(() => toDisplayDate(initialYmd));
   const [busy, setBusy] = useState(false);
-  const [picked, setPicked] = useState(toDateInputValue(current));
+  const [picked, setPicked] = useState(initialYmd);
 
   const apply = async (y, m, d) => {
+    if (isPastCalendarDay(y, m, d)) return;
     setBusy(true);
     try {
       await api('/api/posts', {
@@ -1228,8 +1293,11 @@ function MoveFormBody({ post, onMoved }) {
   };
 
   const applyFromInput = () => {
-    const [ys, ms, ds] = dateVal.split('-').map(Number);
+    const parsed = fromDisplayDate(dateText) || dateVal;
+    if (!parsed) return;
+    const [ys, ms, ds] = parsed.split('-').map(Number);
     if (!ys || !ms || !ds) return;
+    if (isPastCalendarDay(ys, ms - 1, ds)) return;
     apply(ys, ms - 1, ds);
   };
 
@@ -1269,6 +1337,7 @@ function MoveFormBody({ post, onMoved }) {
                   onClick={() => {
                     setPicked(key);
                     setDateVal(key);
+                    setDateText(toDisplayDate(key));
                     apply(q.date.getFullYear(), q.date.getMonth(), q.date.getDate());
                   }}
                 >
@@ -1283,11 +1352,21 @@ function MoveFormBody({ post, onMoved }) {
             <div className="cp-when__field">
               <div className="cp-when__label">Дата</div>
               <Input
-                type="date"
-                value={dateVal}
-                onChange={(e) => {
-                  setDateVal(e.target.value);
-                  setPicked(e.target.value);
+                type="text"
+                inputMode="numeric"
+                lang="ru"
+                placeholder="дд/мм/гг"
+                value={dateText}
+                onChange={(e) => setDateText(e.target.value)}
+                onBlur={() => {
+                  const parsed = fromDisplayDate(dateText);
+                  if (parsed) {
+                    setDateVal(parsed);
+                    setPicked(parsed);
+                    setDateText(toDisplayDate(parsed));
+                  } else {
+                    setDateText(toDisplayDate(dateVal));
+                  }
                 }}
               />
             </div>
@@ -1298,7 +1377,7 @@ function MoveFormBody({ post, onMoved }) {
         <button
           type="button"
           className="cp-post-sticky__save"
-          disabled={busy || !dateVal}
+          disabled={busy || !(fromDisplayDate(dateText) || dateVal)}
           onClick={applyFromInput}
           aria-label="Перенести"
           title="Перенести"
@@ -1362,6 +1441,16 @@ function PostFormBody({
 
   const datePart = when?.slice(0, 10) || '';
   const timePart = when?.slice(11, 16) || '';
+  const [dateText, setDateText] = useState(() => toDisplayDate(datePart));
+  const [timeText, setTimeText] = useState(() => timePart || '');
+
+  useEffect(() => {
+    setDateText(toDisplayDate(datePart));
+  }, [datePart]);
+
+  useEffect(() => {
+    setTimeText(timePart || '');
+  }, [timePart]);
 
   const setDatePart = (v) => {
     setWhen(`${v}T${timePart || '12:00'}`);
@@ -1370,13 +1459,32 @@ function PostFormBody({
     setWhen(`${datePart || toDateInputValue(new Date())}T${v}`);
   };
 
+  const commitDateText = (raw) => {
+    const parsed = fromDisplayDate(raw);
+    if (parsed) setDatePart(parsed);
+    else setDateText(toDisplayDate(datePart));
+  };
+
+  const commitTimeText = (raw) => {
+    const parsed = normalizeTimeInput(raw);
+    if (parsed) setTimePart(parsed);
+    else setTimeText(timePart || '');
+  };
+
   const save = async () => {
     if (!text.trim()) return;
+    const parsedDate = fromDisplayDate(dateText) || datePart;
+    const parsedTime = normalizeTimeInput(timeText) || timePart;
+    if (!parsedDate || !parsedTime) return;
+    const localWhen = `${parsedDate}T${parsedTime}`;
+    const at = new Date(localInputToIso(localWhen));
+    if (!Number.isFinite(at.getTime())) return;
+    if (!isEdit && at.getTime() < Date.now() - 30_000) return;
     setBusy(true);
     try {
       const body = {
         text,
-        publish_at: localInputToIso(when),
+        publish_at: localInputToIso(localWhen),
         kind,
         network,
         category,
@@ -1538,23 +1646,42 @@ function PostFormBody({
           </div>
         </FormItem>
 
-        <FormItem className="cp-when-item" top="Когда">
+        <FormItem className="cp-when-item">
           <div className="cp-when">
             <div className="cp-when__field">
               <div className="cp-when__label">Дата</div>
               <Input
-                type="date"
-                value={datePart}
-                onChange={(e) => setDatePart(e.target.value)}
+                type="text"
+                inputMode="numeric"
+                lang="ru"
+                placeholder="дд/мм/гг"
+                value={dateText}
+                onChange={(e) => setDateText(e.target.value)}
+                onBlur={() => commitDateText(dateText)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    commitDateText(dateText);
+                  }
+                }}
               />
             </div>
             <div className="cp-when__field">
               <div className="cp-when__label">Время</div>
               <Input
-                type="time"
-                value={timePart}
-                step={300}
-                onChange={(e) => setTimePart(e.target.value)}
+                type="text"
+                inputMode="numeric"
+                lang="ru"
+                placeholder="чч:мм"
+                value={timeText}
+                onChange={(e) => setTimeText(e.target.value)}
+                onBlur={() => commitTimeText(timeText)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    commitTimeText(timeText);
+                  }
+                }}
               />
             </div>
           </div>
@@ -1604,13 +1731,6 @@ function PostFormBody({
               <Div className="cp-post-from">
                 <span className="cp-post-from__pill">{category || 'Другое'}</span>
                 <span className="cp-post-from__label">из заготовки</span>
-                <button
-                  type="button"
-                  className="cp-post-from__change"
-                  onClick={() => onPickTemplate?.()}
-                >
-                  Сменить
-                </button>
               </Div>
             )}
 
@@ -2579,6 +2699,11 @@ export default function App() {
 
   const openAdd = () => {
     if (!dayFocus) return;
+    if (
+      isPastCalendarDay(dayFocus.year, dayFocus.month, dayFocus.day)
+    ) {
+      return;
+    }
     setDraft({
       draftDate: nextSlotForDay(
         dayFocus.year,
@@ -2792,11 +2917,7 @@ export default function App() {
         ? 'templates'
         : 'main';
 
-  const showTabbar =
-    (activePanel === 'main' ||
-      activePanel === 'history' ||
-      (activePanel === 'templates' && !tplSelectMode)) &&
-    !tplSelectMode;
+  const showTabbar = !tplSelectMode;
 
   const mainPanel = ['main', 'day', 'edit', 'move', 'week'].includes(activePanel)
     ? activePanel
@@ -2819,12 +2940,22 @@ export default function App() {
   };
 
   const goTab = (id) => {
+    setTplSelectMode(false);
+    setTplDraft(null);
+    setMovePost(null);
+    if (id === 'main') {
+      setDraft(null);
+      setHistoryFocus(null);
+      setActivePanel('main');
+      return;
+    }
     if (id === 'history') {
+      setDraft(null);
       setHistoryFocus(null);
       loadHistory();
     }
     if (id === 'templates') {
-      setTplSelectMode(false);
+      setDraft(null);
       loadTemplates();
       loadCategories();
     }
@@ -2875,9 +3006,7 @@ export default function App() {
     >
       <View id="main" activePanel={mainPanel}>
         <Panel id="main">
-          <PanelHeader delimiter="none" className="cp-main-header">
-            PlanB
-          </PanelHeader>
+          <PanelHeader delimiter="none" className="cp-main-header cp-main-header--blank" />
           <MonthHero
             year={year}
             month={month}

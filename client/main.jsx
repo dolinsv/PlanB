@@ -12,7 +12,7 @@ import { startVersionWatch } from './versionWatch.js';
 startVersionWatch();
 
 createRoot(document.getElementById('root')).render(
-  <ConfigProvider>
+  <ConfigProvider locale="ru">
     <AdaptivityProvider>
       <AppRoot>
         <App />
