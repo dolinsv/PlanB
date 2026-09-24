@@ -230,8 +230,8 @@ body {
 }
 
 .cp-net svg {
-  width: 11px;
-  height: 11px;
+  width: 100%;
+  height: 100%;
   display: block;
   flex-shrink: 0;
 }
@@ -248,21 +248,18 @@ body {
     #c13584 80%,
     #833ab4 95%
   );
+  color: #fff;
 }
 
 .cp-net--vk {
-  background: #0077ff;
+  background: transparent;
+  color: #0077ff;
 }
 
 .cp-net--lg {
   width: 26px;
   height: 26px;
   border-radius: 5px;
-}
-
-.cp-net--lg svg {
-  width: 15px;
-  height: 15px;
 }
 
 .cp-more {
@@ -731,11 +728,6 @@ body {
   border-radius: 6px;
 }
 
-.cp-day-row__tools .cp-net svg {
-  width: 20px;
-  height: 20px;
-}
-
 .cp-type-banner {
   display: flex;
   align-items: center;
@@ -796,11 +788,6 @@ body {
   height: 28px;
   border-radius: 5px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
-}
-
-.cp-type-banner__net .cp-net svg {
-  width: 16px;
-  height: 16px;
 }
 
 .cp-net-pick {
@@ -869,19 +856,24 @@ body {
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12);
   line-height: 0;
   box-sizing: border-box;
+  overflow: hidden;
+  padding: 0;
 }
 
 .cp-net-card__icon svg {
-  width: 22px;
-  height: 22px;
+  width: 100%;
+  height: 100%;
   display: block;
 }
 
 .cp-net-card__icon--vk {
-  background: #0077ff;
+  background: transparent;
+  color: #0077ff;
+  box-shadow: none;
 }
 
 .cp-net-card__icon--ig {
+  color: #fff;
   background: radial-gradient(
     circle farthest-corner at 28% 98%,
     #ffdc80 0%,
@@ -1220,11 +1212,6 @@ body {
     width: 40px;
     height: 40px;
     border-radius: 7px;
-  }
-
-  .cp-day-row__tools .cp-net svg {
-    width: 22px;
-    height: 22px;
   }
 
   .cp-day-row {
