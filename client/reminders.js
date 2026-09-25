@@ -41,7 +41,7 @@ export async function requestNotificationPermission() {
   }
 }
 
-function showNotification(post) {
+async function showNotification(post) {
   const kind = post.kind === 'clip' ? 'Клип' : post.kind === 'story' ? 'Сторис' : 'Пост';
   const when = new Date(post.publish_at);
   const time = when.toLocaleTimeString('ru-RU', {
@@ -49,12 +49,26 @@ function showNotification(post) {
     minute: '2-digit',
   });
   const body = (post.text || '').trim().slice(0, 120) || 'Без текста';
+  const title = `Скоро публикация: ${kind} · ${time}`;
+  const options = {
+    body,
+    tag: `planb-${post.id}`,
+    icon: `${import.meta.env.BASE_URL || '/'}icon-a-180.png`,
+  };
+
+  // Android Chrome forbids `new Notification()`; it must go through the SW.
   try {
-    const n = new Notification(`Через час: ${kind} · ${time}`, {
-      body,
-      tag: `planb-${post.id}`,
-      renotify: false,
-    });
+    const reg = await navigator.serviceWorker?.getRegistration?.();
+    if (reg) {
+      await reg.showNotification(title, options);
+      return;
+    }
+  } catch (e) {
+    console.warn('SW notification failed', e);
+  }
+
+  try {
+    const n = new Notification(title, options);
     n.onclick = () => {
       window.focus();
       n.close();

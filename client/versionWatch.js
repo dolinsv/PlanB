@@ -9,6 +9,15 @@ export function startVersionWatch() {
   let checking = false;
   let lastOk = 0;
 
+  // A reload would drop unsaved text; the next check retries.
+  function isEditing() {
+    const el = document.activeElement;
+    if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) return true;
+    return Boolean(
+      document.querySelector('.cp-post-form, .cp-tpl-form, .cp-move-form')
+    );
+  }
+
   async function check() {
     const now = Date.now();
     if (checking || now - lastOk < 4000) return;
@@ -21,7 +30,7 @@ export function startVersionWatch() {
       if (!res.ok) return;
       const data = await res.json();
       const remote = String(data?.build || '');
-      if (remote && remote !== current) {
+      if (remote && remote !== current && !isEditing()) {
         const url = new URL(window.location.href);
         url.searchParams.set('_v', remote);
         window.location.replace(url.toString());

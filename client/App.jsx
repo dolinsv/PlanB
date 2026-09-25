@@ -31,6 +31,7 @@ import {
   startReminderLoop,
 } from './reminders.js';
 
+const IS_STATIC = import.meta.env.VITE_STATIC === 'true';
 const WEEKDAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 const MONTHS = [
   'Январь',
@@ -46,6 +47,33 @@ const MONTHS = [
   'Ноябрь',
   'Декабрь',
 ];
+const MONTHS_GEN = [
+  'января',
+  'февраля',
+  'марта',
+  'апреля',
+  'мая',
+  'июня',
+  'июля',
+  'августа',
+  'сентября',
+  'октября',
+  'ноября',
+  'декабря',
+];
+
+function pluralRu(n, one, few, many) {
+  const m10 = n % 10;
+  const m100 = n % 100;
+  if (m10 === 1 && m100 !== 11) return one;
+  if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return few;
+  return many;
+}
+
+function postsCountLabel(n) {
+  return `${n} ${pluralRu(n, 'публикация', 'публикации', 'публикаций')}`;
+}
+
 const WEEKDAYS_FULL = [
   'воскресенье',
   'понедельник',
@@ -239,7 +267,7 @@ function dayKey(year, month, day) {
 function dayTitle(year, month, day) {
   const d = new Date(year, month, day);
   const wd = WEEKDAYS_FULL[d.getDay()];
-  return `${day} ${MONTHS[month].toLowerCase()}, ${wd}`;
+  return `${day} ${MONTHS_GEN[month]}, ${wd}`;
 }
 
 function buildMonthCells(year, month) {
@@ -260,10 +288,14 @@ function nextSlotForDay(year, month, day, existing) {
       return d.getHours() * 60 + d.getMinutes();
     })
   );
+  const now = new Date();
+  const isFuture = (d) => d.getTime() > now.getTime() + 5 * 60 * 1000;
   for (const h of SLOT_HOURS) {
     const mins = h * 60;
+    const slot = new Date(year, month, day, h, 0, 0, 0);
+    if (!isFuture(slot)) continue;
     if (![...taken].some((t) => Math.abs(t - mins) < 30)) {
-      return toLocalInputValue(new Date(year, month, day, h, 0, 0, 0));
+      return toLocalInputValue(slot);
     }
   }
   if (existing.length) {
@@ -272,16 +304,46 @@ function nextSlotForDay(year, month, day, existing) {
     if (
       last.getFullYear() === year &&
       last.getMonth() === month &&
-      last.getDate() === day
+      last.getDate() === day &&
+      isFuture(last)
     ) {
       return toLocalInputValue(last);
     }
   }
-  return toLocalInputValue(new Date(year, month, day, 10, 0, 0, 0));
+  const fallback = new Date(year, month, day, 10, 0, 0, 0);
+  if (!isFuture(fallback)) {
+    const nextHour = new Date(now);
+    nextHour.setHours(now.getHours() + 1, 0, 0, 0);
+    if (sameDay(nextHour, fallback)) return toLocalInputValue(nextHour);
+    return toLocalInputValue(new Date(year, month, day, 23, 30, 0, 0));
+  }
+  return toLocalInputValue(fallback);
 }
 
 function pillColor(p) {
   return KIND_MAP[p.kind]?.color || '#2688eb';
+}
+
+/** done = отмечена размещённой, late = время прошло, а отметки нет */
+function postStatus(p) {
+  if (p.reminded === 1 || p.placed === 1) return 'done';
+  const t = new Date(p.publish_at).getTime();
+  return Number.isFinite(t) && t < Date.now() ? 'late' : 'wait';
+}
+
+const STATUS_LABEL = {
+  done: 'размещено',
+  late: 'просрочено',
+  wait: 'ожидает',
+};
+
+function StatusTag({ status, showWait = false }) {
+  if (status === 'wait' && !showWait) return null;
+  return (
+    <span className={`cp-status cp-status--${status}`}>
+      {STATUS_LABEL[status]}
+    </span>
+  );
 }
 
 function NetIcon({ network }) {
@@ -645,6 +707,7 @@ function UpcomingList({ posts, onOpenPost }) {
                     {meta.label}
                     <NetBadge network={p.network} size="sm" />
                     {p.category ? ` · ${p.category}` : ''}
+                    <StatusTag status={postStatus(p)} />
                   </span>
                 </span>
               </button>
@@ -709,7 +772,7 @@ function UpcomingStrip({ posts, onOpenToday, onOpenTomorrow, onOpenWeek }) {
           Неделя
         </button>
       </div>
-      <SyncBadge />
+      {IS_STATIC && <SyncBadge />}
     </Div>
   );
 }
@@ -729,7 +792,22 @@ function WeekPanelBody({ weekStart, posts, onOpenPost, onShiftWeek }) {
 
   const total = days.reduce((n, d) => n + d.posts.length, 0);
   const end = addDaysDate(weekStart, 6);
-  const rangeLabel = `${weekStart.getDate()}–${end.getDate()} ${MONTHS[end.getMonth()]}`;
+  const rangeLabel =
+    weekStart.getMonth() === end.getMonth()
+      ? `${weekStart.getDate()}–${end.getDate()} ${MONTHS_GEN[end.getMonth()]}`
+      : `${weekStart.getDate()} ${MONTHS_GEN[weekStart.getMonth()]} – ${end.getDate()} ${MONTHS_GEN[end.getMonth()]}`;
+  const weekOffset = Math.round(
+    (weekStart.getTime() - startOfWeek(new Date()).getTime()) /
+      (7 * 24 * 60 * 60 * 1000)
+  );
+  const weekTitle =
+    weekOffset === 0
+      ? 'Эта неделя'
+      : weekOffset === 1
+        ? 'Следующая неделя'
+        : weekOffset === -1
+          ? 'Прошлая неделя'
+          : rangeLabel;
 
   return (
     <div className="cp-form-block">
@@ -745,12 +823,12 @@ function WeekPanelBody({ weekStart, posts, onOpenPost, onShiftWeek }) {
               ‹
             </button>
             <div className="cp-week-nav__label">
-              <div className="cp-week-nav__title">Неделя</div>
-              <div className="cp-week-nav__range">{rangeLabel}</div>
+              <div className="cp-week-nav__title">{weekTitle}</div>
+              {weekTitle !== rangeLabel && (
+                <div className="cp-week-nav__range">{rangeLabel}</div>
+              )}
               <div className="cp-week-summary">
-                {total
-                  ? `${total} публикац${total === 1 ? 'ия' : total < 5 ? 'ии' : 'ий'}`
-                  : 'Пока пусто'}
+                {total ? postsCountLabel(total) : 'Пока пусто'}
               </div>
             </div>
             <button
@@ -764,31 +842,34 @@ function WeekPanelBody({ weekStart, posts, onOpenPost, onShiftWeek }) {
           </div>
         </Div>
       </Group>
-      {days.map(({ date, posts: dayPosts }) => {
-        const today = sameDay(date, new Date());
-        return (
-          <Group
-            key={dayKey(date.getFullYear(), date.getMonth(), date.getDate())}
-            header={
-              <Header mode="secondary">
-                {dayLabelShort(date)}
-                {today ? ' · сегодня' : ''}
-              </Header>
-            }
-          >
-            {dayPosts.length === 0 ? (
-              <Div>
-                <div className="cp-week-empty-day">Нет слотов</div>
-              </Div>
-            ) : (
-              dayPosts.map((p) => {
+      <Div className="cp-week-list">
+        {days.map(({ date, posts: dayPosts }) => {
+          const today = sameDay(date, new Date());
+          const past = isPastCalendarDay(
+            date.getFullYear(),
+            date.getMonth(),
+            date.getDate()
+          );
+          return (
+            <section
+              key={dayKey(date.getFullYear(), date.getMonth(), date.getDate())}
+              className={`cp-week-day${today ? ' cp-week-day--today' : ''}${past ? ' cp-week-day--past' : ''}`}
+            >
+              <div className="cp-week-day__head">
+                <span>{dayLabelShort(date)}</span>
+                {today && <span className="cp-week-day__today">сегодня</span>}
+                {dayPosts.length === 0 && (
+                  <span className="cp-week-day__empty">нет публикаций</span>
+                )}
+              </div>
+              {dayPosts.map((p) => {
                 const meta = KIND_MAP[p.kind] || KIND_MAP.post;
-                const done = p.reminded === 1 || p.placed === 1;
+                const status = postStatus(p);
                 return (
                   <button
                     key={p.id}
                     type="button"
-                    className={`cp-week-row${done ? ' cp-week-row--done' : ''}`}
+                    className={`cp-week-row cp-week-row--${status}`}
                     onClick={() => onOpenPost?.(p)}
                   >
                     <span
@@ -801,17 +882,18 @@ function WeekPanelBody({ weekStart, posts, onOpenPost, onShiftWeek }) {
                     <span className="cp-week-row__meta">
                       {meta.label}
                       <NetBadge network={p.network} size="sm" />
+                      <StatusTag status={status} />
                     </span>
                     <span className="cp-week-row__text">
                       {(p.text || '').trim() || '(без текста)'}
                     </span>
                   </button>
                 );
-              })
-            )}
-          </Group>
-        );
-      })}
+              })}
+            </section>
+          );
+        })}
+      </Div>
     </div>
   );
 }
@@ -944,11 +1026,53 @@ async function copyToClipboard(payload) {
   document.body.removeChild(ta);
 }
 
+function CopyButton({ text }) {
+  const [state, setState] = useState('idle');
+  const timer = useRef(null);
+  useEffect(() => () => clearTimeout(timer.current), []);
+  const payload = String(text || '').trim();
+
+  const copy = async () => {
+    if (!payload) return;
+    try {
+      await copyToClipboard(payload);
+      setState('done');
+    } catch (e) {
+      console.error(e);
+      setState('error');
+    }
+    clearTimeout(timer.current);
+    timer.current = setTimeout(() => setState('idle'), 1800);
+  };
+
+  return (
+    <Button
+      size="s"
+      mode={state === 'done' ? 'primary' : 'secondary'}
+      appearance={state === 'error' ? 'negative' : 'accent'}
+      disabled={!payload}
+      onClick={copy}
+      before={
+        <span className="cp-btn-ico" aria-hidden="true">
+          <IconCopy />
+        </span>
+      }
+    >
+      {state === 'done'
+        ? 'Скопировано ✓'
+        : state === 'error'
+          ? 'Не удалось скопировать'
+          : 'Скопировать'}
+    </Button>
+  );
+}
+
 function MonthGrid({
   year,
   month,
   postsByDay,
   onOpenDay,
+  onOpenPost,
   compact,
   onDropPost,
 }) {
@@ -986,16 +1110,24 @@ function MonthGrid({
           const dotsMore = dayPosts.length - dots.length;
           const todayCell = isToday(day);
           const weekend = idx % 7 >= 5;
+          const pastCell = isPastCalendarDay(year, month, day);
 
           return (
             <div
               key={key}
               role="button"
               tabIndex={0}
-              className={`cp-cell${todayCell ? ' cp-cell--today' : ''}${weekend ? ' cp-cell--weekend' : ''}${dropDay === day ? ' cp-cell--drop' : ''}`}
+              aria-label={`${dayTitle(year, month, day)}${dayPosts.length ? `, ${postsCountLabel(dayPosts.length)}` : ''}`}
+              className={`cp-cell${todayCell ? ' cp-cell--today' : ''}${weekend ? ' cp-cell--weekend' : ''}${pastCell ? ' cp-cell--past' : ''}${dropDay === day ? ' cp-cell--drop' : ''}`}
               onClick={() => onOpenDay(day)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  onOpenDay(day);
+                }
+              }}
               onDragOver={(e) => {
-                if (!onDropPost) return;
+                if (!onDropPost || pastCell) return;
                 e.preventDefault();
                 e.dataTransfer.dropEffect = 'move';
                 setDropDay(day);
@@ -1004,7 +1136,7 @@ function MonthGrid({
                 setDropDay((d) => (d === day ? null : d));
               }}
               onDrop={(e) => {
-                if (!onDropPost) return;
+                if (!onDropPost || pastCell) return;
                 e.preventDefault();
                 e.stopPropagation();
                 setDropDay(null);
@@ -1042,8 +1174,12 @@ function MonthGrid({
                       draggable
                       className={`cp-pill${p.reminded === 1 ? ' cp-pill--done' : ''}${dragId === p.id ? ' cp-pill--dragging' : ''}`}
                       style={{ background: pillColor(p) }}
-                      title={`${KIND_MAP[p.kind]?.label} · ${NETWORK_MAP[p.network]?.label || 'VK'} · ${formatTime(p.publish_at)} · перетащите на другой день`}
-                      onClick={(e) => e.stopPropagation()}
+                      title={`${KIND_MAP[p.kind]?.label} · ${NETWORK_MAP[p.network]?.label || 'VK'} · ${formatTime(p.publish_at)} · нажмите, чтобы открыть, или перетащите на другой день`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (onOpenPost) onOpenPost(p);
+                        else onOpenDay(day);
+                      }}
                       onDragStart={(e) => {
                         e.stopPropagation();
                         e.dataTransfer.setData('text/plain', String(p.id));
@@ -1077,15 +1213,22 @@ function MonthGrid({
           </span>
         ))}
         <span className="cp-legend__item">
-          <span style={{ textDecoration: 'line-through', opacity: 0.7 }}>
-            П 10:00
-          </span>
+          {compact ? (
+            <span
+              className="cp-dot cp-dot--done"
+              style={{ background: KINDS[0].color }}
+            />
+          ) : (
+            <span style={{ textDecoration: 'line-through', opacity: 0.7 }}>
+              П 10:00
+            </span>
+          )}
           Размещено
         </span>
       </div>
       {!compact && (
         <Footnote style={{ marginTop: 8, opacity: 0.55, textAlign: 'center' }}>
-          Перетащите плашку на другой день, чтобы перенести
+          Нажмите на плашку, чтобы открыть, или перетащите на другой день
         </Footnote>
       )}
     </Div>
@@ -1111,7 +1254,7 @@ function DayPanelBody({
             <h2 className="cp-day-hero__title">{dayTitle(year, month, day)}</h2>
             <div className="cp-day-hero__meta">
               {posts.length
-                ? `${posts.length} публикац${posts.length === 1 ? 'ия' : posts.length < 5 ? 'ии' : 'ий'}`
+                ? postsCountLabel(posts.length)
                 : past
                   ? 'Прошедший день — только просмотр'
                   : 'Пока пусто — добавьте первую'}
@@ -1151,8 +1294,8 @@ function DayPanelBody({
           <div className="cp-day-list">
             {posts.map((p) => {
               const meta = KIND_MAP[p.kind] || KIND_MAP.post;
-              const net = NETWORK_MAP[p.network] || NETWORK_MAP.vk;
-              const done = p.reminded === 1;
+              const status = postStatus(p);
+              const done = status === 'done';
               return (
                 <div key={p.id} className="cp-day-row">
                     <button
@@ -1188,12 +1331,16 @@ function DayPanelBody({
                       {p.text?.trim() || '(без текста)'}
                     </div>
                     <div className="cp-day-row__meta">
-                      {meta.label} · {net.label} · {p.category || 'Другое'} ·{' '}
-                      {done ? 'размещено' : 'ожидает'}
+                      <StatusTag status={status} showWait />
+                      <span className="cp-day-row__meta-text">
+                        {meta.label} · {p.category || 'Другое'}
+                      </span>
                     </div>
                   </button>
                   <div className="cp-day-row__aside">
-                    <span className="cp-day-row__time">
+                    <span
+                      className={`cp-day-row__time${status === 'late' ? ' cp-day-row__time--late' : ''}`}
+                    >
                       {formatTime(p.publish_at)}
                     </span>
                     <div className="cp-day-row__tools">
@@ -1202,6 +1349,7 @@ function DayPanelBody({
                         type="button"
                         className="cp-icon-btn"
                         title="Перенести на другой день"
+                        aria-label="Перенести на другой день"
                         onClick={(e) => {
                           e.stopPropagation();
                           onMove(p);
@@ -1268,9 +1416,14 @@ function MoveFormBody({ post, onMoved }) {
   const [dateText, setDateText] = useState(() => toDisplayDate(initialYmd));
   const [busy, setBusy] = useState(false);
   const [picked, setPicked] = useState(initialYmd);
+  const [error, setError] = useState('');
 
   const apply = async (y, m, d) => {
-    if (isPastCalendarDay(y, m, d)) return;
+    if (isPastCalendarDay(y, m, d)) {
+      setError('Нельзя перенести в прошедший день');
+      return;
+    }
+    setError('');
     setBusy(true);
     try {
       await api('/api/posts', {
@@ -1287,17 +1440,19 @@ function MoveFormBody({ post, onMoved }) {
       onMoved({ year: y, month: m, day: d });
     } catch (e) {
       console.error(e);
+      setError('Не удалось перенести. Попробуйте ещё раз');
     } finally {
       setBusy(false);
     }
   };
 
   const applyFromInput = () => {
-    const parsed = fromDisplayDate(dateText) || dateVal;
-    if (!parsed) return;
+    const parsed = fromDisplayDate(dateText);
+    if (!parsed) {
+      setError('Дата в формате дд/мм/гг, например 05/10/26');
+      return;
+    }
     const [ys, ms, ds] = parsed.split('-').map(Number);
-    if (!ys || !ms || !ds) return;
-    if (isPastCalendarDay(ys, ms - 1, ds)) return;
     apply(ys, ms - 1, ds);
   };
 
@@ -1328,12 +1483,26 @@ function MoveFormBody({ post, onMoved }) {
           <div className="cp-move-grid">
             {quick.map((q) => {
               const key = toDateInputValue(q.date);
+              const target = new Date(
+                shiftToDay(
+                  post.publish_at,
+                  q.date.getFullYear(),
+                  q.date.getMonth(),
+                  q.date.getDate()
+                )
+              );
+              const tooLate = target.getTime() < Date.now();
               return (
                 <button
                   key={q.label}
                   type="button"
                   className={`cp-move-chip${picked === key ? ' cp-move-chip--active' : ''}`}
-                  disabled={busy}
+                  disabled={busy || tooLate}
+                  title={
+                    tooLate
+                      ? `${formatTime(post.publish_at)} сегодня уже прошло`
+                      : undefined
+                  }
                   onClick={() => {
                     setPicked(key);
                     setDateVal(key);
@@ -1357,7 +1526,10 @@ function MoveFormBody({ post, onMoved }) {
                 lang="ru"
                 placeholder="дд/мм/гг"
                 value={dateText}
-                onChange={(e) => setDateText(e.target.value)}
+                onChange={(e) => {
+                  setDateText(e.target.value);
+                  if (error) setError('');
+                }}
                 onBlur={() => {
                   const parsed = fromDisplayDate(dateText);
                   if (parsed) {
@@ -1368,16 +1540,29 @@ function MoveFormBody({ post, onMoved }) {
                     setDateText(toDisplayDate(dateVal));
                   }
                 }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    applyFromInput();
+                  }
+                }}
               />
             </div>
           </div>
         </FormItem>
+        {error && (
+          <Div>
+            <div className="cp-form-error" role="alert">
+              {error}
+            </div>
+          </Div>
+        )}
       </Group>
       <div className="cp-post-sticky">
         <button
           type="button"
           className="cp-post-sticky__save"
-          disabled={busy || !(fromDisplayDate(dateText) || dateVal)}
+          disabled={busy}
           onClick={applyFromInput}
           aria-label="Перенести"
           title="Перенести"
@@ -1414,7 +1599,8 @@ function PostFormBody({
       : draft?.draftDate || toLocalInputValue(new Date())
   );
   const [busy, setBusy] = useState(false);
-  const [copyBusy, setCopyBusy] = useState(false);
+  const [error, setError] = useState('');
+  const [confirmDel, setConfirmDel] = useState(false);
   const [placed, setPlaced] = useState(draft?.post?.reminded === 1);
   // create flow: null = pick source, 'template' | 'custom'
   const [contentMode, setContentMode] = useState(() => {
@@ -1460,26 +1646,45 @@ function PostFormBody({
   };
 
   const commitDateText = (raw) => {
+    setError('');
     const parsed = fromDisplayDate(raw);
     if (parsed) setDatePart(parsed);
     else setDateText(toDisplayDate(datePart));
   };
 
   const commitTimeText = (raw) => {
+    setError('');
     const parsed = normalizeTimeInput(raw);
     if (parsed) setTimePart(parsed);
     else setTimeText(timePart || '');
   };
 
   const save = async () => {
-    if (!text.trim()) return;
-    const parsedDate = fromDisplayDate(dateText) || datePart;
-    const parsedTime = normalizeTimeInput(timeText) || timePart;
-    if (!parsedDate || !parsedTime) return;
+    if (!text.trim()) {
+      setError('Добавьте текст публикации');
+      return;
+    }
+    const parsedDate = fromDisplayDate(dateText);
+    const parsedTime = normalizeTimeInput(timeText);
+    if (!parsedDate) {
+      setError('Дата в формате дд/мм/гг, например 05/10/26');
+      return;
+    }
+    if (!parsedTime) {
+      setError('Время в формате чч:мм, например 18:30');
+      return;
+    }
     const localWhen = `${parsedDate}T${parsedTime}`;
     const at = new Date(localInputToIso(localWhen));
-    if (!Number.isFinite(at.getTime())) return;
-    if (!isEdit && at.getTime() < Date.now() - 30_000) return;
+    if (!Number.isFinite(at.getTime())) {
+      setError('Проверьте дату и время');
+      return;
+    }
+    if (!isEdit && at.getTime() < Date.now() - 30_000) {
+      setError('Это время уже прошло — выберите более позднее');
+      return;
+    }
+    setError('');
     setBusy(true);
     try {
       const body = {
@@ -1498,6 +1703,7 @@ function PostFormBody({
       onBack();
     } catch (e) {
       console.error(e);
+      setError('Не удалось сохранить. Попробуйте ещё раз');
     } finally {
       setBusy(false);
     }
@@ -1505,6 +1711,7 @@ function PostFormBody({
 
   const remove = async () => {
     if (!isEdit) return;
+    setConfirmDel(false);
     setBusy(true);
     try {
       await api(`/api/posts/${draft.post.id}`, { method: 'DELETE' });
@@ -1512,21 +1719,9 @@ function PostFormBody({
       onBack();
     } catch (e) {
       console.error(e);
+      setError('Не удалось удалить. Попробуйте ещё раз');
     } finally {
       setBusy(false);
-    }
-  };
-
-  const copyText = async () => {
-    const payload = text.trim();
-    if (!payload) return;
-    setCopyBusy(true);
-    try {
-      await copyToClipboard(payload);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setCopyBusy(false);
     }
   };
 
@@ -1765,19 +1960,7 @@ function PostFormBody({
                     </Button>
                   </>
                 )}
-                <Button
-                  size="s"
-                  mode="secondary"
-                  disabled={copyBusy || !text.trim()}
-                  onClick={copyText}
-                  before={
-                    <span className="cp-btn-ico" aria-hidden="true">
-                      <IconCopy />
-                    </span>
-                  }
-                >
-                  Скопировать
-                </Button>
+                <CopyButton text={text} />
               </div>
               <div
                 className="cp-post-textarea-wrap"
@@ -1785,12 +1968,22 @@ function PostFormBody({
               >
                 <Textarea
                   value={text}
-                  onChange={(e) => setText(e.target.value)}
+                  onChange={(e) => {
+                    setText(e.target.value);
+                    if (error) setError('');
+                  }}
                   placeholder={placeholder}
                 />
               </div>
             </FormItem>
           </>
+        )}
+        {error && (
+          <Div>
+            <div className="cp-form-error" role="alert">
+              {error}
+            </div>
+          </Div>
         )}
       </Group>
 
@@ -1800,59 +1993,43 @@ function PostFormBody({
             type="button"
             className="cp-post-sticky__danger"
             disabled={busy}
-            onClick={remove}
+            onClick={() => setConfirmDel(true)}
             aria-label="Удалить"
             title="Удалить"
           >
             <IconTrash />
           </button>
         )}
-        <button
-          type="button"
-          className="cp-post-sticky__save"
-          disabled={busy || !text.trim() || !datePart || !timePart}
-          onClick={save}
-          aria-label="Сохранить"
-          title="Сохранить"
-        >
-          <IconSave />
-          <span>Сохранить</span>
-        </button>
+        {showContentEditor && (
+          <button
+            type="button"
+            className="cp-post-sticky__save"
+            disabled={busy}
+            onClick={save}
+            aria-label="Сохранить"
+            title="Сохранить"
+          >
+            <IconSave />
+            <span>Сохранить</span>
+          </button>
+        )}
       </div>
+
+      {confirmDel && (
+        <ConfirmDialog
+          title="Удалить публикацию?"
+          message="Она исчезнет из календаря на всех устройствах."
+          onCancel={() => setConfirmDel(false)}
+          onConfirm={remove}
+        />
+      )}
     </div>
   );
 }
 
-function HistoryDetailBody({ entry, onDeleted }) {
+function HistoryDetailBody({ entry, onDelete }) {
   const meta = KIND_MAP[entry.kind] || KIND_MAP.post;
   const net = NETWORK_MAP[entry.network] || NETWORK_MAP.vk;
-  const [copyBusy, setCopyBusy] = useState(false);
-  const [busy, setBusy] = useState(false);
-
-  const copyText = async () => {
-    const payload = (entry.text || '').trim();
-    if (!payload) return;
-    setCopyBusy(true);
-    try {
-      await copyToClipboard(payload);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setCopyBusy(false);
-    }
-  };
-
-  const remove = async () => {
-    setBusy(true);
-    try {
-      await api(`/api/history/${entry.id}`, { method: 'DELETE' });
-      onDeleted?.();
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setBusy(false);
-    }
-  };
 
   const rows = [
     { label: 'Тип', value: meta.label },
@@ -1886,19 +2063,7 @@ function HistoryDetailBody({ entry, onDeleted }) {
         </Div>
         <FormItem top="Текст">
           <div className="cp-text-toolbar">
-            <Button
-              size="s"
-              mode="secondary"
-              disabled={copyBusy || !(entry.text || '').trim()}
-              onClick={copyText}
-              before={
-                <span className="cp-btn-ico" aria-hidden="true">
-                  <IconCopy />
-                </span>
-              }
-            >
-              Скопировать
-            </Button>
+            <CopyButton text={entry.text} />
           </div>
           <div className="cp-history-text">
             {entry.text?.trim() || '(без текста)'}
@@ -1919,8 +2084,7 @@ function HistoryDetailBody({ entry, onDeleted }) {
         <button
           type="button"
           className="cp-post-sticky__danger"
-          disabled={busy}
-          onClick={remove}
+          onClick={() => onDelete?.(entry)}
           aria-label="Удалить из истории"
           title="Удалить из истории"
         >
@@ -1956,6 +2120,15 @@ function TemplatesList({
     }
     return ['Все', ...base, ...extras];
   }, [templates, categories]);
+
+  const counts = useMemo(() => {
+    const map = { Все: templates.length };
+    for (const t of templates) {
+      const c = t.category || 'Другое';
+      map[c] = (map[c] || 0) + 1;
+    }
+    return map;
+  }, [templates]);
 
   const filtered = useMemo(() => {
     let list =
@@ -2019,6 +2192,9 @@ function TemplatesList({
               onClick={() => onCategory(c)}
             >
               {c}
+              {counts[c] ? (
+                <span className="cp-tpl-filter__count">{counts[c]}</span>
+              ) : null}
             </button>
           ))}
         </div>
@@ -2313,11 +2489,18 @@ function CategoriesManageBody({ categories, onChanged }) {
   const [editValue, setEditValue] = useState('');
   const [busy, setBusy] = useState(false);
   const [confirmCat, setConfirmCat] = useState(null);
+  const [error, setError] = useState('');
+
+  const describe = (e) =>
+    e?.status === 409 || /exist/i.test(String(e?.message))
+      ? 'Такая тематика уже есть'
+      : 'Не удалось сохранить. Попробуйте ещё раз';
 
   const add = async () => {
     const n = name.trim();
     if (!n || busy) return;
     setBusy(true);
+    setError('');
     try {
       await api('/api/categories', {
         method: 'POST',
@@ -2327,6 +2510,7 @@ function CategoriesManageBody({ categories, onChanged }) {
       onChanged?.();
     } catch (e) {
       console.error(e);
+      setError(describe(e));
     } finally {
       setBusy(false);
     }
@@ -2350,6 +2534,7 @@ function CategoriesManageBody({ categories, onChanged }) {
       return;
     }
     setBusy(true);
+    setError('');
     try {
       await api('/api/categories', {
         method: 'PUT',
@@ -2359,6 +2544,7 @@ function CategoriesManageBody({ categories, onChanged }) {
       onChanged?.();
     } catch (e) {
       console.error(e);
+      setError(describe(e));
     } finally {
       setBusy(false);
     }
@@ -2408,7 +2594,10 @@ function CategoriesManageBody({ categories, onChanged }) {
           <div className="cp-cat-add">
             <Input
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => {
+                setName(e.target.value);
+                if (error) setError('');
+              }}
               placeholder="Название"
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
@@ -2427,6 +2616,13 @@ function CategoriesManageBody({ categories, onChanged }) {
             </Button>
           </div>
         </FormItem>
+        {error && (
+          <Div>
+            <div className="cp-form-error" role="alert">
+              {error}
+            </div>
+          </Div>
+        )}
       </Group>
       <Group header={<Header mode="secondary">Тематики</Header>}>
         {(categories?.length ? categories : DEFAULT_CATEGORIES).map((c) => (
@@ -2526,6 +2722,7 @@ export default function App() {
   const [historyFocus, setHistoryFocus] = useState(null);
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
   const [confirmTpl, setConfirmTpl] = useState(null);
+  const [confirmBox, setConfirmBox] = useState(null);
   const planPostsRef = useRef(planPosts);
 
   const year = cursor.getFullYear();
@@ -2615,8 +2812,7 @@ export default function App() {
 
   // Live updates: Firebase (all devices) or storage event (other tabs)
   useEffect(() => {
-    const STATIC = import.meta.env.VITE_STATIC === 'true';
-    if (STATIC) {
+    if (IS_STATIC) {
       return subscribeStore(() => {
         loadPosts();
         loadPlanPosts();
@@ -2753,7 +2949,7 @@ export default function App() {
 
   const dropPost = async (id, y, m, d) => {
     const post = posts.find((p) => p.id === id);
-    if (!post) return;
+    if (!post || isPastCalendarDay(y, m, d)) return;
     const cur = new Date(post.publish_at);
     if (
       cur.getFullYear() === y &&
@@ -2788,7 +2984,9 @@ export default function App() {
 
   const backFromEdit = () => {
     setDraft(null);
-    setActivePanel(draft?.returnTo === 'day' && dayFocus ? 'day' : 'main');
+    if (draft?.returnTo === 'week') setActivePanel('week');
+    else if (draft?.returnTo === 'day' && dayFocus) setActivePanel('day');
+    else setActivePanel('main');
   };
 
   const openTemplates = (selectMode = false) => {
@@ -2836,13 +3034,19 @@ export default function App() {
     loadHistory();
   };
 
-  const deletePostFromDay = async (p) => {
-    try {
-      await api(`/api/posts/${p.id}`, { method: 'DELETE' });
-      afterDelete();
-    } catch (e) {
-      console.error(e);
-    }
+  const deletePostFromDay = (p) => {
+    setConfirmBox({
+      title: 'Удалить публикацию?',
+      message: `${(p.text || '').trim().slice(0, 80) || '(без текста)'} · ${formatTime(p.publish_at)}`,
+      onConfirm: async () => {
+        try {
+          await api(`/api/posts/${p.id}`, { method: 'DELETE' });
+          afterDelete();
+        } catch (e) {
+          console.error(e);
+        }
+      },
+    });
   };
 
   const quickDeleteTemplate = async (t) => {
@@ -2861,15 +3065,15 @@ export default function App() {
     }
   };
 
-  const openFromUpcoming = (p) => {
+  const openPostFrom = (returnTo) => (p) => {
     const d = new Date(p.publish_at);
-    setCursor(startOfMonth(d));
+    if (returnTo !== 'week') setCursor(startOfMonth(d));
     setDayFocus({
       year: d.getFullYear(),
       month: d.getMonth(),
       day: d.getDate(),
     });
-    setDraft({ post: p, returnTo: 'day' });
+    setDraft({ post: p, returnTo });
     setActivePanel('edit');
   };
 
@@ -2893,17 +3097,23 @@ export default function App() {
     setActivePanel('week');
   };
 
-  const deleteHistoryEntry = async (h) => {
-    try {
-      await api(`/api/history/${h.id}`, { method: 'DELETE' });
-      await loadHistory();
-      if (historyFocus?.id === h.id) {
-        setHistoryFocus(null);
-        setActivePanel('history');
-      }
-    } catch (e) {
-      console.error(e);
-    }
+  const deleteHistoryEntry = (h) => {
+    setConfirmBox({
+      title: 'Удалить из истории?',
+      message: 'Сама публикация в календаре останется.',
+      onConfirm: async () => {
+        try {
+          await api(`/api/history/${h.id}`, { method: 'DELETE' });
+          await loadHistory();
+          if (historyFocus?.id === h.id) {
+            setHistoryFocus(null);
+            setActivePanel('history');
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      },
+    });
   };
 
   const editTitle = draft?.post?.id ? 'Редактировать' : 'Новая публикация';
@@ -3021,6 +3231,7 @@ export default function App() {
               month={month}
               postsByDay={postsByDay}
               onOpenDay={openDay}
+              onOpenPost={openPostFrom('main')}
               compact={isMobile}
               onDropPost={dropPost}
             />
@@ -3031,7 +3242,7 @@ export default function App() {
             onOpenTomorrow={() => openDayByOffset(1)}
             onOpenWeek={openWeek}
           />
-          <UpcomingList posts={planPosts} onOpenPost={openFromUpcoming} />
+          <UpcomingList posts={planPosts} onOpenPost={openPostFrom('main')} />
           <NotifyBanner />
         </Panel>
 
@@ -3044,7 +3255,7 @@ export default function App() {
           <WeekPanelBody
             weekStart={weekStart}
             posts={planPosts}
-            onOpenPost={openFromUpcoming}
+            onOpenPost={openPostFrom('week')}
             onShiftWeek={(dir) =>
               setWeekStart((w) => addDaysDate(w, dir * 7))
             }
@@ -3119,14 +3330,21 @@ export default function App() {
                 const meta = KIND_MAP[h.kind] || KIND_MAP.post;
                 const net = NETWORK_MAP[h.network] || NETWORK_MAP.vk;
                 return (
-                  <div key={h.id} className="cp-tpl-card cp-history-card">
+                  <div
+                    key={h.id}
+                    className="cp-tpl-card cp-history-card"
+                    style={{ '--cp-kind-color': meta.color }}
+                  >
                     <button
                       type="button"
                       className="cp-tpl-card__main"
                       onClick={() => openHistoryDetail(h)}
                     >
-                      <div className="cp-tpl-card__cat">
-                        {meta.label} · {net.label} · {h.category || 'Другое'}
+                      <div className="cp-history-card__top">
+                        <NetBadge network={h.network || 'vk'} />
+                        <span className="cp-tpl-card__cat">
+                          {meta.label} · {net.label} · {h.category || 'Другое'}
+                        </span>
                       </div>
                       <div className="cp-tpl-card__text">
                         {h.text?.trim() || '(без текста)'}
@@ -3164,11 +3382,7 @@ export default function App() {
             <HistoryDetailBody
               key={historyFocus.id}
               entry={historyFocus}
-              onDeleted={() => {
-                loadHistory();
-                setHistoryFocus(null);
-                setActivePanel('history');
-              }}
+              onDelete={deleteHistoryEntry}
             />
           )}
         </Panel>
@@ -3254,6 +3468,19 @@ export default function App() {
         message="Текст будет удалён безвозвратно."
         onCancel={() => setConfirmTpl(null)}
         onConfirm={confirmQuickDeleteTemplate}
+      />
+    )}
+    {confirmBox && (
+      <ConfirmDialog
+        title={confirmBox.title}
+        message={confirmBox.message}
+        confirmLabel={confirmBox.confirmLabel}
+        onCancel={() => setConfirmBox(null)}
+        onConfirm={() => {
+          const box = confirmBox;
+          setConfirmBox(null);
+          box.onConfirm();
+        }}
       />
     )}
     </>

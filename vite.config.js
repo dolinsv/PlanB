@@ -30,7 +30,7 @@ export default defineConfig({
     proxy: isPages
       ? undefined
       : {
-          '/api': 'http://127.0.0.1:3000',
+          '/api/': 'http://127.0.0.1:3000',
         },
   },
 });

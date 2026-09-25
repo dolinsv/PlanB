@@ -12,7 +12,9 @@ export async function api(path, options) {
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.error || res.statusText);
+    const e = new Error(err.error || res.statusText);
+    e.status = res.status;
+    throw e;
   }
   return res.json();
 }

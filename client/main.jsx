@@ -11,6 +11,12 @@ import { startVersionWatch } from './versionWatch.js';
 
 startVersionWatch();
 
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  navigator.serviceWorker
+    .register(`${import.meta.env.BASE_URL}sw.js`)
+    .catch((e) => console.warn('SW registration failed', e));
+}
+
 createRoot(document.getElementById('root')).render(
   <ConfigProvider locale="ru">
     <AdaptivityProvider>

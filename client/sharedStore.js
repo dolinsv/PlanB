@@ -1,5 +1,12 @@
 import { initializeApp } from 'firebase/app';
-import { getDatabase, ref, onValue, set, get } from 'firebase/database';
+import {
+  getDatabase,
+  ref,
+  onValue,
+  set,
+  get,
+  runTransaction,
+} from 'firebase/database';
 import { firebaseConfig, isRemoteSyncEnabled } from './firebaseConfig.js';
 
 const STORE_KEY = 'planb_store_v1';
@@ -230,8 +237,9 @@ let cache = null;
 let dbRef = null;
 let remoteReady = false;
 let bootPromise = null;
-let lastWrittenAt = '';
 let writeChain = Promise.resolve();
+let pendingTx = 0;
+let txFailed = false;
 const listeners = new Set();
 const syncListeners = new Set();
 
@@ -285,7 +293,6 @@ function queueRemoteWrite(store) {
     return Promise.resolve();
   }
   const payload = toRemotePayload(store);
-  lastWrittenAt = payload.updated_at;
   setSyncStatus('syncing');
   writeChain = writeChain
     .then(() => set(dbRef, payload))
@@ -344,16 +351,64 @@ function initRemote() {
   const db = getDatabase(app);
   dbRef = ref(db, REMOTE_PATH);
 
+  // Boot merge happens in ensureStore; afterwards the server copy is the truth.
+  // While our own transactions are in flight their result replaces the cache.
   onValue(dbRef, (snap) => {
+    if (!remoteReady || pendingTx > 0) return;
     const val = snap.val();
-    if (val?.updated_at && val.updated_at === lastWrittenAt) {
-      remoteReady = true;
+    if (!val) return;
+    if (val.updated_at && val.updated_at === cache?.updated_at) return;
+    try {
+      cache = normalizeStore(val);
+    } catch (e) {
+      console.warn('Bad remote store, keeping local', e);
       return;
     }
-    const prevAt = cache?.updated_at || '';
-    applyRemote(val, { allowPushLocal: true });
-    if (cache && cache.updated_at !== prevAt) emit();
+    writeLocal(cache);
+    emit();
   });
+}
+
+/**
+ * Apply the same mutation to the latest server copy, so edits made on
+ * different devices at the same time are combined instead of overwritten.
+ */
+function commitRemote(mutator, base) {
+  const offline = typeof navigator !== 'undefined' && !navigator.onLine;
+  setSyncStatus(offline ? 'offline' : 'syncing');
+  pendingTx += 1;
+  runTransaction(
+    dbRef,
+    (current) => {
+      const draft = current ? normalizeStore(current) : structuredClone(base);
+      try {
+        mutator(draft);
+      } catch {
+        return undefined;
+      }
+      draft.updated_at = new Date().toISOString();
+      return toRemotePayload(draft);
+    },
+    { applyLocally: false }
+  )
+    .then((res) => {
+      const val = res.snapshot.val();
+      if (val) {
+        cache = normalizeStore(val);
+        writeLocal(cache);
+      }
+    })
+    .catch((e) => {
+      console.warn('Firebase write failed', e);
+      txFailed = true;
+    })
+    .finally(() => {
+      pendingTx -= 1;
+      if (pendingTx > 0) return;
+      setSyncStatus(txFailed ? 'error' : 'saved');
+      txFailed = false;
+      emit();
+    });
 }
 
 // other tabs / windows on the same browser
@@ -426,18 +481,17 @@ export function getStoreSync() {
 
 export async function saveStore(mutator) {
   await ensureStore();
+  const base = structuredClone(cache);
   const next = structuredClone(cache);
   const result = mutator(next);
   next.updated_at = new Date().toISOString();
   cache = normalizeStore(next);
   writeLocal(cache);
 
+  // Not awaited: the UI stays responsive offline and the transaction
+  // finishes (and re-emits) once the connection is back.
   if (isRemoteSyncEnabled() && dbRef) {
-    try {
-      await queueRemoteWrite(cache);
-    } catch (e) {
-      console.warn('Firebase write failed', e);
-    }
+    commitRemote(mutator, base);
   }
 
   emit();
