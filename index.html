@@ -19,12 +19,16 @@
     <script>
       (function () {
         try {
-          var t = localStorage.getItem('planb_theme') || 'auto';
+          var t = localStorage.getItem('planb_theme');
           var dark =
             t === 'dark' ||
             (t !== 'light' &&
               window.matchMedia &&
               window.matchMedia('(prefers-color-scheme: dark)').matches);
+          // Persist explicit choice (no more "auto")
+          if (t !== 'dark' && t !== 'light') {
+            localStorage.setItem('planb_theme', dark ? 'dark' : 'light');
+          }
           document.documentElement.setAttribute(
             'data-theme',
             dark ? 'dark' : 'light'
@@ -46,7 +50,7 @@
     <link rel="icon" type="image/png" href="/PlanB/icon-a-180.png" />
     <link rel="icon" type="image/png" sizes="512x512" href="/PlanB/icon-a-512.png" />
     <title>PlanB</title>
-    <script type="module" crossorigin src="/PlanB/assets/index-Ch00diQx.js"></script>
+    <script type="module" crossorigin src="/PlanB/assets/index-BGp8yeVb.js"></script>
     <link rel="stylesheet" crossorigin href="/PlanB/assets/index-BVHyEenU.css">
   </head>
   <body>
