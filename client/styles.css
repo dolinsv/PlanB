@@ -2701,11 +2701,129 @@ body {
   color: #ff8a8a;
 }
 
-@media (max-width: 480px) {
-  .cp-sync {
-    font-size: 10px;
-    padding: 2px 6px;
+/* ---------- Eye comfort ----------
+   Light: no pure white / pure black (21:1 contrast tires the eyes).
+   Dark: no near-black page, secondary text bright enough to read. */
+html.vkui--vkBase--light {
+  --vkui--color_background: #eceef1;
+  --vkui--color_background_content: #f9fafb;
+  --vkui--color_background_secondary: #eef0f3;
+  --vkui--color_text_primary: #23272d;
+  --vkui--color_text_secondary: #66707c;
+  --vkui--color_text_subhead: #5d6773;
+  --vkui--color_text_tertiary: #8a939e;
+  --vkui--color_separator_primary: #dde0e4;
+  --vkui--color_background_accent: #2b7fd6;
+  --vkui--color_text_accent: #2472c4;
+  --cp-weekend: #c2585a;
+  --cp-weekend-bg: color-mix(in srgb, #e64646 4%, var(--vkui--color_background_secondary));
+}
+
+html.vkui--vkBase--dark {
+  --vkui--color_background: #16181b;
+  --vkui--color_background_content: #1c1f23;
+  --vkui--color_background_secondary: #262a2f;
+  --vkui--color_text_primary: #dadde2;
+  --vkui--color_text_secondary: #9ba3ad;
+  --vkui--color_text_subhead: #a4acb5;
+  --vkui--color_text_tertiary: #7d858f;
+  --vkui--color_separator_primary: #33383e;
+  --vkui--color_background_accent: #4f93dc;
+  --vkui--color_text_accent: #6aa6e6;
+  --cp-weekend: #d98a8a;
+  --cp-weekend-bg: color-mix(in srgb, #e64646 6%, var(--vkui--color_background_secondary));
+}
+
+body,
+.vkuiAppRoot {
+  background: var(--vkui--color_background_content);
+  color: var(--vkui--color_text_primary);
+}
+
+.cp-weekday--weekend,
+.cp-cell--weekend .cp-cell__day {
+  color: var(--cp-weekend);
+}
+
+.cp-cell--weekend {
+  background: var(--cp-weekend-bg);
+}
+
+.cp-cell--past:not(.cp-cell--today) .cp-cell__day {
+  opacity: 0.55;
+}
+
+/* Readable minimum sizes for small labels */
+.cp-weekday,
+.cp-tpl-filter__item,
+.cp-next__day,
+.cp-theme-toggle,
+.cp-sync,
+.cp-legend__item {
+  font-size: 12px;
+}
+
+.cp-cell__count,
+.cp-more,
+.cp-tpl-badge,
+.cp-status,
+.cp-week-day__today,
+.cp-tpl-filter__count {
+  font-size: 11px;
+}
+
+.cp-dot-more {
+  font-size: 10px;
+}
+
+.cp-dot--done {
+  opacity: 0.4;
+  box-shadow: none;
+}
+
+.cp-tpl-card__cat {
+  font-size: 11.5px;
+  letter-spacing: 0.03em;
+}
+
+.cp-tpl-filter__item {
+  min-height: 30px;
+  padding: 5px 11px;
+  font-weight: 600;
+}
+
+/* Calmer reading rhythm for longer texts */
+.cp-tpl-card__text,
+.cp-week-row__text,
+.cp-history-text {
+  line-height: 1.5;
+}
+
+.cp-post-textarea-wrap textarea,
+.cp-post-form .vkuiTextarea__el,
+.cp-tpl-form .vkuiTextarea__el {
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+/* Softer shadows and highlights */
+.cp-tpl-filter__item--active {
+  box-shadow: none;
+}
+
+@media (hover: hover) {
+  .cp-cell:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   }
+}
+
+.vkui--vkBase--dark .cp-type-banner {
+  filter: saturate(0.85) brightness(0.92);
+}
+
+.vkui--vkBase--dark .cp-tpl-filter__item--active,
+.vkui--vkBase--dark .cp-week-day__today {
+  color: #f3f6fa;
 }
 
 @media (prefers-reduced-motion: reduce) {
