@@ -3249,9 +3249,7 @@ export default function App() {
         <Panel id="week">
           <PanelHeader
             before={<PanelHeaderBack onClick={() => setActivePanel('main')} />}
-          >
-            Неделя
-          </PanelHeader>
+          />
           <WeekPanelBody
             weekStart={weekStart}
             posts={planPosts}
