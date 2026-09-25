@@ -10,6 +10,19 @@
   --cp-accent-soft: #ecfeff;
   --vkui--font_family_base: var(--cp-font);
   --vkui--font_family_accent: var(--cp-font);
+  /* Hero cards — light defaults; dark overrides below */
+  --cp-hero-bg: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--cp-accent) 10%, #f4f8fa) 0%,
+    color-mix(in srgb, #67e8f9 14%, #f7fafc) 48%,
+    color-mix(in srgb, #fef3c7 16%, #f8f6f0) 100%
+  );
+  --cp-hero-border: color-mix(in srgb, var(--cp-accent) 14%, transparent);
+  --cp-hero-title: #1a3d48;
+  --cp-hero-meta: color-mix(in srgb, #1a3d48 68%, transparent);
+  --cp-hero-nav-bg: color-mix(in srgb, #fff 55%, transparent);
+  --cp-hero-nav-color: var(--cp-accent);
+  --cp-hero-badge-bg: color-mix(in srgb, var(--cp-accent) 14%, #fff);
 }
 
 html,
@@ -326,14 +339,8 @@ body {
   animation: cp-fade-up 0.36s var(--cp-ease) both;
   padding: 14px 16px;
   border-radius: 18px;
-  background:
-    linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--cp-accent) 10%, #fff) 0%,
-      color-mix(in srgb, #67e8f9 18%, #fff) 48%,
-      color-mix(in srgb, #fef3c7 22%, #fff) 100%
-    );
-  border: 1px solid color-mix(in srgb, var(--cp-accent) 14%, transparent);
+  background: var(--cp-hero-bg);
+  border: 1px solid var(--cp-hero-border);
   box-sizing: border-box;
 }
 
@@ -344,7 +351,7 @@ body {
   line-height: 1.25;
   font-weight: 750;
   letter-spacing: -0.02em;
-  color: #0f3f4a;
+  color: var(--cp-hero-title);
 }
 
 .cp-day-hero__title::first-letter {
@@ -356,7 +363,7 @@ body {
   font-size: 13px;
   line-height: 1.3;
   font-weight: 550;
-  color: color-mix(in srgb, #0f3f4a 72%, transparent);
+  color: var(--cp-hero-meta);
 }
 
 .cp-day-list {
@@ -1359,15 +1366,9 @@ body {
   gap: 12px;
   padding: 12px 14px;
   border-radius: 16px;
-  color: #0f3f4a;
-  background:
-    linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--cp-accent) 12%, #fff) 0%,
-      color-mix(in srgb, #67e8f9 16%, #fff) 55%,
-      color-mix(in srgb, #fef3c7 18%, #fff) 100%
-    );
-  border: 1px solid color-mix(in srgb, var(--cp-accent) 16%, transparent);
+  color: var(--cp-hero-title);
+  background: var(--cp-hero-bg);
+  border: 1px solid var(--cp-hero-border);
   box-sizing: border-box;
 }
 
@@ -1379,8 +1380,8 @@ body {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  background: color-mix(in srgb, var(--cp-accent) 14%, #fff);
-  color: var(--cp-accent);
+  background: var(--cp-hero-badge-bg);
+  color: var(--cp-hero-nav-color);
 }
 
 .cp-tpl-hero__badge svg {
@@ -1404,12 +1405,12 @@ body {
   margin-top: 3px;
   font-size: 13px;
   font-weight: 550;
-  color: color-mix(in srgb, #0f3f4a 70%, transparent);
+  color: var(--cp-hero-meta);
 }
 
 .cp-tpl-hero__sub strong {
   font-weight: 750;
-  color: var(--cp-accent);
+  color: var(--cp-hero-nav-color);
 }
 
 .cp-tpl-form .vkuiFormItem {
@@ -1888,14 +1889,8 @@ body {
   gap: 8px;
   padding: 14px 12px;
   border-radius: 18px;
-  background:
-    linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--cp-accent) 10%, #fff) 0%,
-      color-mix(in srgb, #67e8f9 18%, #fff) 48%,
-      color-mix(in srgb, #fef3c7 22%, #fff) 100%
-    );
-  border: 1px solid color-mix(in srgb, var(--cp-accent) 14%, transparent);
+  background: var(--cp-hero-bg);
+  border: 1px solid var(--cp-hero-border);
   box-sizing: border-box;
 }
 
@@ -1905,8 +1900,8 @@ body {
   flex-shrink: 0;
   border: 0;
   border-radius: 12px;
-  background: color-mix(in srgb, #fff 70%, transparent);
-  color: var(--cp-accent);
+  background: var(--cp-hero-nav-bg);
+  color: var(--cp-hero-nav-color);
   font-size: 24px;
   line-height: 1;
   cursor: pointer;
@@ -1931,7 +1926,7 @@ body {
   font-weight: 800;
   line-height: 1.05;
   letter-spacing: -0.03em;
-  color: #0f3f4a;
+  color: var(--cp-hero-title);
   text-transform: capitalize;
 }
 
@@ -1944,7 +1939,7 @@ body {
   margin-top: 6px;
   font-size: 13px;
   font-weight: 600;
-  color: color-mix(in srgb, #0f3f4a 72%, transparent);
+  color: var(--cp-hero-meta);
 }
 
 .cp-month-hero__year {
@@ -2282,33 +2277,27 @@ body {
   gap: 8px;
   padding: 12px;
   border-radius: 18px;
-  background:
-    linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--cp-accent) 10%, #fff) 0%,
-      color-mix(in srgb, #67e8f9 18%, #fff) 48%,
-      color-mix(in srgb, #fef3c7 22%, #fff) 100%
-    );
-  border: 1px solid color-mix(in srgb, var(--cp-accent) 14%, transparent);
+  background: var(--cp-hero-bg);
+  border: 1px solid var(--cp-hero-border);
   box-sizing: border-box;
 }
 
 .cp-week-hero .cp-week-nav__btn {
-  background: color-mix(in srgb, #fff 70%, transparent);
+  background: var(--cp-hero-nav-bg);
   border-color: transparent;
-  color: var(--cp-accent);
+  color: var(--cp-hero-nav-color);
 }
 
 .cp-week-hero .cp-week-nav__title {
   font-family: var(--cp-font);
   font-size: 18px;
   font-weight: 750;
-  color: #0f3f4a;
+  color: var(--cp-hero-title);
 }
 
 .cp-week-hero .cp-week-summary {
   margin-top: 4px;
-  color: color-mix(in srgb, #0f3f4a 72%, transparent);
+  color: var(--cp-hero-meta);
 }
 
 .cp-week-nav {
@@ -2636,47 +2625,20 @@ body {
 }
 
 /* Dark appearance: keep hero cards readable without a bright white block */
-.vkui--vkBase--dark .cp-month-hero__inner,
-.vkui--vkBase--dark .cp-day-hero,
-.vkui--vkBase--dark .cp-week-hero,
-.vkui--vkBase--dark .cp-tpl-hero {
-  background: linear-gradient(
+html.vkui--vkBase--dark,
+.vkui--vkBase--dark {
+  --cp-hero-bg: linear-gradient(
     135deg,
-    color-mix(in srgb, var(--cp-accent) 38%, #16181c) 0%,
-    color-mix(in srgb, #0e7490 22%, #16181c) 55%,
-    color-mix(in srgb, #a16207 16%, #16181c) 100%
+    #1a2e35 0%,
+    #1c2830 55%,
+    #24221c 100%
   );
-  border-color: color-mix(in srgb, #67e8f9 16%, transparent);
-  color: #e6f6f9;
-}
-
-.vkui--vkBase--dark .cp-month-hero__month,
-.vkui--vkBase--dark .cp-day-hero__title,
-.vkui--vkBase--dark .cp-week-hero .cp-week-nav__title {
-  color: #f1fbfd;
-}
-
-.vkui--vkBase--dark .cp-month-hero__meta,
-.vkui--vkBase--dark .cp-day-hero__meta,
-.vkui--vkBase--dark .cp-week-hero .cp-week-summary,
-.vkui--vkBase--dark .cp-week-hero .cp-week-nav__range,
-.vkui--vkBase--dark .cp-tpl-hero__sub {
-  color: color-mix(in srgb, #e6f6f9 72%, transparent);
-}
-
-.vkui--vkBase--dark .cp-month-hero__nav,
-.vkui--vkBase--dark .cp-week-hero .cp-week-nav__btn {
-  background: color-mix(in srgb, #fff 10%, transparent);
-  color: #a5f3fc;
-}
-
-.vkui--vkBase--dark .cp-tpl-hero__badge {
-  background: color-mix(in srgb, #fff 10%, transparent);
-  color: #a5f3fc;
-}
-
-.vkui--vkBase--dark .cp-tpl-hero__sub strong {
-  color: #a5f3fc;
+  --cp-hero-border: rgba(103, 232, 249, 0.14);
+  --cp-hero-title: #e8f4f6;
+  --cp-hero-meta: rgba(232, 244, 246, 0.68);
+  --cp-hero-nav-bg: rgba(255, 255, 255, 0.08);
+  --cp-hero-nav-color: #9ad8e3;
+  --cp-hero-badge-bg: rgba(255, 255, 255, 0.08);
 }
 
 .vkui--vkBase--dark .cp-status--late,
@@ -2695,6 +2657,15 @@ body {
 
 .vkui--vkBase--dark .cp-day-row__time--late {
   color: #ff8a8a;
+}
+
+.vkui--vkBase--dark .cp-theme-toggle {
+  color: var(--vkui--color_text_secondary);
+  border-color: var(--vkui--color_separator_primary);
+}
+
+.vkui--vkBase--dark .cp-notify-banner .vkuiButton {
+  --vkui--color_background_accent: #3d7eb8;
 }
 
 /* ---------- Eye comfort ----------
@@ -2730,6 +2701,13 @@ html.vkui--vkBase--dark {
   --vkui--color_text_accent: #6aa6e6;
   --cp-weekend: #d98a8a;
   --cp-weekend-bg: color-mix(in srgb, #e64646 6%, var(--vkui--color_background_secondary));
+  --cp-hero-bg: linear-gradient(135deg, #1a2e35 0%, #1c2830 55%, #24221c 100%);
+  --cp-hero-border: rgba(103, 232, 249, 0.14);
+  --cp-hero-title: #e8f4f6;
+  --cp-hero-meta: rgba(232, 244, 246, 0.68);
+  --cp-hero-nav-bg: rgba(255, 255, 255, 0.08);
+  --cp-hero-nav-color: #9ad8e3;
+  --cp-hero-badge-bg: rgba(255, 255, 255, 0.08);
 }
 
 body,
