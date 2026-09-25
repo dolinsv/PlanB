@@ -2701,6 +2701,7 @@ body {
    Light: no pure white / pure black (21:1 contrast tires the eyes).
    Dark: no near-black page, secondary text bright enough to read. */
 html.vkui--vkBase--light {
+  color-scheme: light;
   --vkui--color_background: #eceef1;
   --vkui--color_background_content: #f9fafb;
   --vkui--color_background_secondary: #eef0f3;
@@ -2716,6 +2717,7 @@ html.vkui--vkBase--light {
 }
 
 html.vkui--vkBase--dark {
+  color-scheme: dark;
   --vkui--color_background: #16181b;
   --vkui--color_background_content: #1c1f23;
   --vkui--color_background_secondary: #262a2f;
