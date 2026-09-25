@@ -4,3 +4,4 @@ data/store.json
 data/store.json.tmp
 .env
 .env.*
+vite.log
