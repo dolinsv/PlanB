@@ -763,57 +763,58 @@ function UpcomingList({ posts, onOpenPost }) {
 }
 
 function UpcomingStrip({ posts, onOpenToday, onOpenTomorrow, onOpenWeek }) {
-  const { todayCount, tomorrowCount, nextTodayTime } = useMemo(() => {
+  const { todayCount, tomorrowCount, weekCount, nextTodayTime } = useMemo(() => {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const tomorrow = addDaysDate(today, 1);
+    const weekFrom = startOfWeek(today);
+    const weekTo = addDaysDate(weekFrom, 7);
     const list = (posts || [])
       .filter((p) => p.reminded !== 1 && p.placed !== 1)
       .sort((a, b) => String(a.publish_at).localeCompare(String(b.publish_at)));
     const todayList = list.filter((p) => sameDay(new Date(p.publish_at), today));
-    const tomorrowList = list.filter((p) =>
-      sameDay(new Date(p.publish_at), tomorrow)
+    const upcomingToday = todayList.filter(
+      (p) => new Date(p.publish_at).getTime() >= now.getTime()
     );
     return {
       todayCount: todayList.length,
-      tomorrowCount: tomorrowList.length,
-      nextTodayTime: todayList[0] ? formatTime(todayList[0].publish_at) : null,
+      tomorrowCount: list.filter((p) => sameDay(new Date(p.publish_at), tomorrow))
+        .length,
+      weekCount: list.filter((p) => {
+        const t = new Date(p.publish_at);
+        return t >= weekFrom && t < weekTo;
+      }).length,
+      nextTodayTime: upcomingToday[0]
+        ? formatTime(upcomingToday[0].publish_at)
+        : null,
     };
   }, [posts]);
+
+  const tile = (label, count, onClick, extra, mod = '') => (
+    <button
+      type="button"
+      className={`cp-soon__chip${count ? ' cp-soon__chip--hot' : ''}${mod}`}
+      onClick={onClick}
+    >
+      <span className="cp-soon__label">{label}</span>
+      <span className="cp-soon__value">
+        <span className="cp-soon__num">{count}</span>
+        {extra && <span className="cp-soon__time">{extra}</span>}
+      </span>
+    </button>
+  );
 
   return (
     <Div className="cp-soon-wrap">
       <div className="cp-soon">
-        <button
-          type="button"
-          className={`cp-soon__chip${todayCount ? ' cp-soon__chip--hot' : ''}`}
-          onClick={() => onOpenToday?.()}
-        >
-          <span className="cp-soon__label">Сегодня</span>
-          <span className={`cp-soon__count${todayCount ? ' cp-soon__count--on' : ''}`}>
-            {todayCount}
-          </span>
-          {nextTodayTime && (
-            <span className="cp-soon__time">{nextTodayTime}</span>
-          )}
-        </button>
-        <button
-          type="button"
-          className="cp-soon__chip"
-          onClick={() => onOpenTomorrow?.()}
-        >
-          <span className="cp-soon__label">Завтра</span>
-          <span className={`cp-soon__count${tomorrowCount ? ' cp-soon__count--on' : ''}`}>
-            {tomorrowCount}
-          </span>
-        </button>
-        <button
-          type="button"
-          className="cp-soon__chip cp-soon__chip--week"
-          onClick={onOpenWeek}
-        >
-          Неделя
-        </button>
+        {tile(
+          'Сегодня',
+          todayCount,
+          () => onOpenToday?.(),
+          nextTodayTime ? `в ${nextTodayTime}` : null
+        )}
+        {tile('Завтра', tomorrowCount, () => onOpenTomorrow?.())}
+        {tile('Неделя', weekCount, onOpenWeek, 'открыть ›', ' cp-soon__chip--week')}
       </div>
       <div className="cp-soon-foot">
         {IS_STATIC && <SyncBadge />}
