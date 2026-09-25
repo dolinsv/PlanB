@@ -31,6 +31,14 @@ export function startVersionWatch() {
       const data = await res.json();
       const remote = String(data?.build || '');
       if (remote && remote !== current && !isEditing()) {
+        try {
+          if (window.caches?.keys) {
+            const keys = await window.caches.keys();
+            await Promise.all(keys.map((k) => window.caches.delete(k)));
+          }
+        } catch {
+          /* ignore */
+        }
         const url = new URL(window.location.href);
         url.searchParams.set('_v', remote);
         window.location.replace(url.toString());

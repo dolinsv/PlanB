@@ -2626,7 +2626,9 @@ body {
 
 /* Dark appearance: keep hero cards readable without a bright white block */
 html.vkui--vkBase--dark,
-.vkui--vkBase--dark {
+.vkui--vkBase--dark,
+html[data-theme='dark'],
+[data-theme='dark'] {
   --cp-hero-bg: linear-gradient(
     135deg,
     #1a2e35 0%,
@@ -2641,30 +2643,99 @@ html.vkui--vkBase--dark,
   --cp-hero-badge-bg: rgba(255, 255, 255, 0.08);
 }
 
+/* Force heroes on mobile: some WebViews keep old light gradients in cache */
+html[data-theme='dark'] .cp-month-hero__inner,
+html[data-theme='dark'] .cp-day-hero,
+html[data-theme='dark'] .cp-week-hero,
+html[data-theme='dark'] .cp-tpl-hero,
+.cp-theme-dark .cp-month-hero__inner,
+.cp-theme-dark .cp-day-hero,
+.cp-theme-dark .cp-week-hero,
+.cp-theme-dark .cp-tpl-hero {
+  background: #1c2830 !important;
+  background-image: linear-gradient(
+    135deg,
+    #1a2e35 0%,
+    #1c2830 55%,
+    #24221c 100%
+  ) !important;
+  border-color: rgba(103, 232, 249, 0.14) !important;
+  color: #e8f4f6 !important;
+}
+
+html[data-theme='dark'] .cp-month-hero__month,
+html[data-theme='dark'] .cp-day-hero__title,
+html[data-theme='dark'] .cp-week-hero .cp-week-nav__title,
+html[data-theme='dark'] .cp-tpl-hero__title,
+.cp-theme-dark .cp-month-hero__month,
+.cp-theme-dark .cp-day-hero__title,
+.cp-theme-dark .cp-week-hero .cp-week-nav__title,
+.cp-theme-dark .cp-tpl-hero__title {
+  color: #e8f4f6 !important;
+}
+
+html[data-theme='dark'] .cp-month-hero__meta,
+html[data-theme='dark'] .cp-day-hero__meta,
+html[data-theme='dark'] .cp-week-hero .cp-week-summary,
+html[data-theme='dark'] .cp-week-hero .cp-week-nav__range,
+html[data-theme='dark'] .cp-tpl-hero__sub,
+.cp-theme-dark .cp-month-hero__meta,
+.cp-theme-dark .cp-day-hero__meta,
+.cp-theme-dark .cp-week-hero .cp-week-summary,
+.cp-theme-dark .cp-week-hero .cp-week-nav__range,
+.cp-theme-dark .cp-tpl-hero__sub {
+  color: rgba(232, 244, 246, 0.68) !important;
+}
+
+html[data-theme='dark'] .cp-month-hero__nav,
+html[data-theme='dark'] .cp-week-hero .cp-week-nav__btn,
+html[data-theme='dark'] .cp-tpl-hero__badge,
+.cp-theme-dark .cp-month-hero__nav,
+.cp-theme-dark .cp-week-hero .cp-week-nav__btn,
+.cp-theme-dark .cp-tpl-hero__badge {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #9ad8e3 !important;
+}
+
+html[data-theme='dark'] .cp-weekday--weekend,
+html[data-theme='dark'] .cp-cell--weekend .cp-cell__day,
+.cp-theme-dark .cp-weekday--weekend,
+.cp-theme-dark .cp-cell--weekend .cp-cell__day {
+  color: #d98a8a !important;
+}
+
 .vkui--vkBase--dark .cp-status--late,
-.vkui--vkBase--dark .cp-form-error {
+.vkui--vkBase--dark .cp-form-error,
+[data-theme='dark'] .cp-status--late,
+[data-theme='dark'] .cp-form-error {
   color: #ff8a8a;
 }
 
 .vkui--vkBase--dark .cp-status--done,
-.vkui--vkBase--dark .cp-sync--saved {
+.vkui--vkBase--dark .cp-sync--saved,
+[data-theme='dark'] .cp-status--done,
+[data-theme='dark'] .cp-sync--saved {
   color: #6fdc8c;
 }
 
-.vkui--vkBase--dark .cp-sync--saved .cp-sync__dot {
+.vkui--vkBase--dark .cp-sync--saved .cp-sync__dot,
+[data-theme='dark'] .cp-sync--saved .cp-sync__dot {
   background: #6fdc8c;
 }
 
-.vkui--vkBase--dark .cp-day-row__time--late {
+.vkui--vkBase--dark .cp-day-row__time--late,
+[data-theme='dark'] .cp-day-row__time--late {
   color: #ff8a8a;
 }
 
-.vkui--vkBase--dark .cp-theme-toggle {
+.vkui--vkBase--dark .cp-theme-toggle,
+[data-theme='dark'] .cp-theme-toggle {
   color: var(--vkui--color_text_secondary);
   border-color: var(--vkui--color_separator_primary);
 }
 
-.vkui--vkBase--dark .cp-notify-banner .vkuiButton {
+.vkui--vkBase--dark .cp-notify-banner .vkuiButton,
+[data-theme='dark'] .cp-notify-banner .vkuiButton {
   --vkui--color_background_accent: #3d7eb8;
 }
 
