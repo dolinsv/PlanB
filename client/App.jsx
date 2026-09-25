@@ -777,7 +777,7 @@ function UpcomingStrip({ posts, onOpenToday, onOpenTomorrow, onOpenWeek }) {
   );
 }
 
-function WeekPanelBody({ weekStart, posts, onOpenPost, onShiftWeek }) {
+function WeekPanelBody({ weekStart, posts, onOpenPost, onShiftWeek, onBack }) {
   const days = useMemo(() => {
     const out = [];
     for (let i = 0; i < 7; i++) {
@@ -812,7 +812,13 @@ function WeekPanelBody({ weekStart, posts, onOpenPost, onShiftWeek }) {
   return (
     <div className="cp-form-block">
       <Group>
-        <Div>
+        <Div className="cp-week-top">
+          <button type="button" className="cp-back-chip" onClick={onBack}>
+            <span className="cp-back-chip__arrow" aria-hidden="true">
+              ‹
+            </span>
+            Календарь
+          </button>
           <div className="cp-week-hero">
             <button
               type="button"
@@ -3247,10 +3253,9 @@ export default function App() {
         </Panel>
 
         <Panel id="week">
-          <PanelHeader
-            before={<PanelHeaderBack onClick={() => setActivePanel('main')} />}
-          />
+          <PanelHeader delimiter="none" className="cp-main-header cp-main-header--blank" />
           <WeekPanelBody
+            onBack={() => setActivePanel('main')}
             weekStart={weekStart}
             posts={planPosts}
             onOpenPost={openPostFrom('week')}

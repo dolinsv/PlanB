@@ -2321,6 +2321,50 @@ body {
   color: var(--vkui--color_text_secondary);
 }
 
+.cp-week-top {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding-top: 4px !important;
+}
+
+.cp-week-top .cp-week-hero {
+  align-self: stretch;
+}
+
+.cp-back-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 14px 0 10px;
+  border: 1px solid color-mix(in srgb, var(--cp-accent) 18%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--cp-accent) 8%, var(--vkui--color_background_content));
+  color: var(--cp-accent);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.cp-back-chip__arrow {
+  font-size: 22px;
+  line-height: 1;
+  margin-top: -2px;
+}
+
+.cp-back-chip:active {
+  transform: scale(0.97);
+}
+
+.vkui--vkBase--dark .cp-back-chip {
+  color: #a5f3fc;
+  border-color: color-mix(in srgb, #67e8f9 20%, transparent);
+  background: color-mix(in srgb, #fff 6%, transparent);
+}
+
 .cp-week-list {
   display: flex;
   flex-direction: column;
