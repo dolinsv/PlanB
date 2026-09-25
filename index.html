@@ -9,13 +9,32 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="PlanB" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <meta name="theme-color" content="#0e7490" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="theme-color" content="#0e7490" id="cp-theme-color" />
     <meta name="color-scheme" content="light dark" />
     <meta name="darkreader-lock" />
     <meta name="application-name" content="PlanB" />
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <meta http-equiv="Pragma" content="no-cache" />
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem('planb_theme') || 'auto';
+          var dark =
+            t === 'dark' ||
+            (t !== 'light' &&
+              window.matchMedia &&
+              window.matchMedia('(prefers-color-scheme: dark)').matches);
+          document.documentElement.setAttribute(
+            'data-theme',
+            dark ? 'dark' : 'light'
+          );
+          document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
+          var meta = document.getElementById('cp-theme-color');
+          if (meta) meta.setAttribute('content', dark ? '#1c1f23' : '#0e7490');
+        } catch (e) {}
+      })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -27,8 +46,8 @@
     <link rel="icon" type="image/png" href="/PlanB/icon-a-180.png" />
     <link rel="icon" type="image/png" sizes="512x512" href="/PlanB/icon-a-512.png" />
     <title>PlanB</title>
-    <script type="module" crossorigin src="/PlanB/assets/index-43mKjTaa.js"></script>
-    <link rel="stylesheet" crossorigin href="/PlanB/assets/index-BRRSAHnw.css">
+    <script type="module" crossorigin src="/PlanB/assets/index-Ch00diQx.js"></script>
+    <link rel="stylesheet" crossorigin href="/PlanB/assets/index-BVHyEenU.css">
   </head>
   <body>
     <div id="root"></div>
