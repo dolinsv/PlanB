@@ -2090,11 +2090,43 @@ body {
   display: none;
 }
 
+.cp-soon-foot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .cp-soon-wrap .cp-sync {
-  align-self: center;
   margin: 0;
   opacity: 0.8;
-  transform: scale(0.92);
+}
+
+.cp-theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px 3px 7px;
+  border: 1px solid var(--vkui--color_separator_primary_alpha);
+  border-radius: 999px;
+  background: var(--vkui--color_background_secondary);
+  color: var(--vkui--color_text_secondary);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.cp-theme-toggle svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.cp-theme-toggle:active {
+  transform: scale(0.96);
 }
 
 .cp-sync {

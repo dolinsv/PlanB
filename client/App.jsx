@@ -30,6 +30,7 @@ import {
   requestNotificationPermission,
   startReminderLoop,
 } from './reminders.js';
+import { THEME_ORDER, useTheme } from './theme.js';
 
 const IS_STATIC = import.meta.env.VITE_STATIC === 'true';
 const WEEKDAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
@@ -598,6 +599,48 @@ function SyncBadge() {
   );
 }
 
+const THEME_LABEL = { auto: 'Как на телефоне', dark: 'Тёмная', light: 'Светлая' };
+
+function ThemeToggle() {
+  const { theme, setTheme } = useTheme();
+  const next = THEME_ORDER[(THEME_ORDER.indexOf(theme) + 1) % THEME_ORDER.length];
+  return (
+    <button
+      type="button"
+      className="cp-theme-toggle"
+      onClick={() => setTheme(next)}
+      title={`Тема: ${THEME_LABEL[theme]}. Нажмите — ${THEME_LABEL[next].toLowerCase()}`}
+    >
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        {theme === 'light' ? (
+          <>
+            <circle cx="12" cy="12" r="4" stroke="currentColor" strokeWidth="1.8" />
+            <path
+              d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M18.4 5.6 17 7M7 17l-1.4 1.4"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+            />
+          </>
+        ) : theme === 'dark' ? (
+          <path
+            d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinejoin="round"
+          />
+        ) : (
+          <>
+            <circle cx="12" cy="12" r="8" stroke="currentColor" strokeWidth="1.8" />
+            <path d="M12 4a8 8 0 0 1 0 16Z" fill="currentColor" />
+          </>
+        )}
+      </svg>
+      Тема: {THEME_LABEL[theme].toLowerCase()}
+    </button>
+  );
+}
+
 function MonthHero({ year, month, planned, placed, onPrev, onNext }) {
   const total = planned + placed;
   const stats =
@@ -772,7 +815,10 @@ function UpcomingStrip({ posts, onOpenToday, onOpenTomorrow, onOpenWeek }) {
           Неделя
         </button>
       </div>
-      {IS_STATIC && <SyncBadge />}
+      <div className="cp-soon-foot">
+        {IS_STATIC && <SyncBadge />}
+        <ThemeToggle />
+      </div>
     </Div>
   );
 }
