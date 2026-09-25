@@ -30,7 +30,7 @@ import {
   requestNotificationPermission,
   startReminderLoop,
 } from './reminders.js';
-import { THEME_ORDER, useTheme } from './theme.js';
+import { useTheme } from './theme.js';
 
 const IS_STATIC = import.meta.env.VITE_STATIC === 'true';
 const WEEKDAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
@@ -599,20 +599,21 @@ function SyncBadge() {
   );
 }
 
-const THEME_LABEL = { auto: 'Как на телефоне', dark: 'Тёмная', light: 'Светлая' };
+const THEME_LABEL = { dark: 'Тёмная', light: 'Светлая' };
 
 function ThemeToggle() {
   const { theme, setTheme } = useTheme();
-  const next = THEME_ORDER[(THEME_ORDER.indexOf(theme) + 1) % THEME_ORDER.length];
+  const current = theme === 'dark' ? 'dark' : 'light';
+  const next = current === 'dark' ? 'light' : 'dark';
   return (
     <button
       type="button"
       className="cp-theme-toggle"
       onClick={() => setTheme(next)}
-      title={`Тема: ${THEME_LABEL[theme]}. Нажмите — ${THEME_LABEL[next].toLowerCase()}`}
+      title={`Тема: ${THEME_LABEL[current]}. Нажмите — ${THEME_LABEL[next].toLowerCase()}`}
     >
       <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        {theme === 'light' ? (
+        {current === 'light' ? (
           <>
             <circle cx="12" cy="12" r="4" stroke="currentColor" strokeWidth="1.8" />
             <path
@@ -622,21 +623,16 @@ function ThemeToggle() {
               strokeLinecap="round"
             />
           </>
-        ) : theme === 'dark' ? (
+        ) : (
           <path
             d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z"
             stroke="currentColor"
             strokeWidth="1.8"
             strokeLinejoin="round"
           />
-        ) : (
-          <>
-            <circle cx="12" cy="12" r="8" stroke="currentColor" strokeWidth="1.8" />
-            <path d="M12 4a8 8 0 0 1 0 16Z" fill="currentColor" />
-          </>
         )}
       </svg>
-      Тема: {THEME_LABEL[theme].toLowerCase()}
+      Тема: {THEME_LABEL[current].toLowerCase()}
     </button>
   );
 }

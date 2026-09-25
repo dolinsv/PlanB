@@ -1,26 +1,27 @@
 import { createContext, useContext } from 'react';
 
 export const THEME_KEY = 'planb_theme';
-export const THEME_ORDER = ['auto', 'dark', 'light'];
+export const THEME_ORDER = ['dark', 'light'];
 
 export function readTheme() {
   try {
     const v = localStorage.getItem(THEME_KEY);
-    return THEME_ORDER.includes(v) ? v : 'auto';
+    if (v === 'dark' || v === 'light') return v;
+    // Old "auto" (or missing) → prefer system once, then store explicit choice
+    if (typeof window !== 'undefined' && window.matchMedia) {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches
+        ? 'dark'
+        : 'light';
+    }
   } catch {
-    return 'auto';
-  }
-}
-
-/** Resolved light/dark used for CSS (data-theme) and VKUI appearance. */
-export function resolveAppearance(theme) {
-  if (theme === 'dark' || theme === 'light') return theme;
-  if (typeof window !== 'undefined' && window.matchMedia) {
-    return window.matchMedia('(prefers-color-scheme: dark)').matches
-      ? 'dark'
-      : 'light';
+    /* private mode */
   }
   return 'light';
+}
+
+/** Always light or dark — no system follow. */
+export function resolveAppearance(theme) {
+  return theme === 'dark' ? 'dark' : 'light';
 }
 
 export function applyThemeToDom(theme) {

@@ -30,21 +30,17 @@ function Root() {
 
   useEffect(() => {
     applyThemeToDom(theme);
-    if (theme !== 'auto') return undefined;
-    const mq = window.matchMedia('(prefers-color-scheme: dark)');
-    const onChange = () => applyThemeToDom('auto');
-    mq.addEventListener('change', onChange);
-    return () => mq.removeEventListener('change', onChange);
   }, [theme]);
 
   const ctx = useMemo(
     () => ({
       theme,
       setTheme: (next) => {
-        setThemeState(next);
-        applyThemeToDom(next);
+        const value = next === 'dark' ? 'dark' : 'light';
+        setThemeState(value);
+        applyThemeToDom(value);
         try {
-          localStorage.setItem(THEME_KEY, next);
+          localStorage.setItem(THEME_KEY, value);
         } catch {
           /* private mode */
         }
